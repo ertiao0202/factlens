@@ -225,24 +225,24 @@ xxx
             content = text.slice(0, 3500);
             title = '直接粘贴的文本内容';
           }
-          $('progress-text').textContent = 'AI深度分析中...';
-          $('progress-bar').style.width = '60%';
-          const kimiMd = await analyzeWithKimi(content, title);
-          $('progress-text').textContent = '生成可信度报告...';
-          $('progress-bar').style.width = '100%';
-          displayResults(parseKimiResponse(kimiMd));
+            $('progress-text').textContent = 'AI深度分析中...';
+            $('progress-bar').style.width = '60%';
+            const kimiMd = await analyzeWithKimi(content, title);
+            $('progress-text').textContent = '生成可信度报告...';
+            $('progress-bar').style.width = '100%';
+            displayResults(parseKimiResponse(kimiMd));
         } catch (err) {
-          $('progress-text').textContent = '分析失败';
-          $('progress-bar').style.width = '100%';
-          $('total-conclusion').textContent =
-            err.message === 'NO_VALID_BODY'
-              ? '因网站设置原因，明鉴AI无法访问原始内容，请复制粘贴文本内容直接进行分析。'
-              : '分析过程出现异常，请稍后重试。';
-          $('summary-banner').classList.remove('hidden');
-          resultsSection.classList.add('hidden');
-          fourDimCard.classList.add('hidden');
-          setTimeout(() => progressSection.classList.add('hidden'), 1500);
-          return;
+            $('progress-text').textContent = '分析失败';
+            $('progress-bar').style.width = '100%';
+            $('total-conclusion').textContent =
+              err.message === 'NO_VALID_BODY'
+                ? '因网站设置原因，明鉴AI无法访问原始内容，请复制粘贴文本内容直接进行分析。'
+                : '分析过程出现异常，请稍后重试。';
+            $('summary-banner').classList.remove('hidden');
+            resultsSection.classList.add('hidden');
+            fourDimCard.classList.add('hidden');
+            setTimeout(() => progressSection.classList.add('hidden'), 1500);
+            return;
         }
 
         setTimeout(() => {
@@ -293,7 +293,6 @@ xxx
         $('report-title').textContent = d.title || '分析文章';
         $('credibility-score').textContent = `${d.credibility || 8.5} / 10`;
         $('credibility-reason').textContent = d.reason || '内容分析完成';
-        $('total-conclusion').textContent = d.summaryForBanner || '这是一篇' + (d.credibility >= 8 ? '客观中立' : d.credibility >= 6 ? '有失偏颇' : '不够客观') + '的报道。';
 
         // 2. 饼图容错（失败也不影响文字）
         try {
@@ -315,6 +314,14 @@ xxx
         $('overall-tendency').textContent = d.bias.overallTendency || '中性 0%';
         $('publisher-recommendation').textContent = d.publisherRecommendation || '建议提升内容质量';
         $('pr-recommendation').textContent = d.recommendation || '建议谨慎处理';
+
+        // 4. 总结论容错（有则显示，无则隐藏）
+        if (d.summaryForBanner && d.summaryForBanner.trim()) {
+          $('summary-banner').classList.remove('hidden');
+          $('total-conclusion').textContent = d.summaryForBanner.replace(/\s+/g, ' ').trim();
+        } else {
+          $('summary-banner').classList.add('hidden');
+        }
       }
 
       function drawRadar(data) {
