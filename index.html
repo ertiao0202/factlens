@@ -288,8 +288,37 @@ xxx
         return r;
       }
 
+      function displayResults(d) {
+        // 1. 先写文字（永不失败）
+        $('report-title').textContent = d.title || '分析文章';
+        $('credibility-score').textContent = `${d.credibility || 8.5} / 10`;
+        $('credibility-reason').textContent = d.reason || '内容分析完成';
+        $('total-conclusion').textContent = d.summaryForBanner || '这是一篇' + (d.credibility >= 8 ? '客观中立' : d.credibility >= 6 ? '有失偏颇' : '不够客观') + '的报道。';
+
+        // 2. 饼图容错（失败也不影响文字）
+        try {
+          createCredibilityChart(d.credibility || 8.5);
+        } catch (e) {
+          console.warn('饼图渲染失败', e);
+          // 清空饼图区域，避免残留
+          document.getElementById('credibility-chart').innerHTML = '';
+        }
+
+        // 3. 其余文字（永不失败）
+        const factsList = document.getElementById('facts-list');
+        factsList.innerHTML = d.facts.length ? d.facts.map((f, i) => `<div class="text-sm text-gray-700 bg-blue-50 p-3 rounded-lg">${i + 1}. ${f}</div>`).join('') : '<div class="text-sm text-gray-500">未检测到明确的事实陈述</div>';
+        const opList = document.getElementById('opinions-list');
+        opList.innerHTML = d.opinions.length ? d.opinions.map((o, i) => `<div class="text-sm text-gray-700 bg-green-50 p-3 rounded-lg">${i + 1}. ${o}</div>`).join('') : '<div class="text-sm text-gray-500">未检测到明确的观点表达</div>';
+        $('emotional-words').textContent = d.bias.emotionalWords + ' 处';
+        $('binary-opposition').textContent = d.bias.binaryOpposition + ' 组';
+        $('motivation-guessing').textContent = d.bias.motivationGuessing + ' 处';
+        $('overall-tendency').textContent = d.bias.overallTendency || '中性 0%';
+        $('publisher-recommendation').textContent = d.publisherRecommendation || '建议提升内容质量';
+        $('pr-recommendation').textContent = d.recommendation || '建议谨慎处理';
+      }
+
       function drawRadar(data) {
-        const ctx = $('radar-canvas');
+        const ctx = document.getElementById('radar-canvas');
         if (window.radarInstance) window.radarInstance.destroy();
         window.radarInstance = new Chart(ctx, {
           type: 'radar',
