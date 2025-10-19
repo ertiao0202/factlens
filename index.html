@@ -9,8 +9,8 @@
   <script src="https://cdn.tailwindcss.com/3.4.0"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
-  <!-- 新增：html2canvas 用于生成海报 -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- ① 换用国内镜像，避免被拦截 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-B2c2sS4YBXKZAYfLNjx7xI/gpOw6N5b3Jm8Dd8LfQ9" crossorigin="anonymous"></script>
 
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -468,6 +468,18 @@ ${content}`;
     /* ===== DOM 绑定 ===== */
     document.addEventListener('DOMContentLoaded', () => {
       const analyzeBtn = $('analyze-btn'), sampleBtn = $('sample-btn'), urlInput = $('url-input'), textInput = $('text-input'), progressSection = $('progress-section'), resultsSection = $('results-section'), fourDimCard = $('four-dim-card'), clearBtn = $('clear-btn'), clearTextBtn = $('clear-text-btn'), bottomShare = $('bottom-share');
+
+      /* ② 兜底：html2canvas 可用性检查 */
+      if (typeof html2canvas === 'undefined') {
+        console.error('[FactLens] html2canvas 加载失败，海报功能不可用');
+        // 可选：把按钮文字改成「加载失败」并禁用
+        const btn = $('share-poster-bottom');
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = '<i class="fas fa-exclamation-triangle mr-2"></i>组件加载失败';
+        }
+        return;
+      }
 
       function toggleBtn() {
         const u = urlInput.value.trim(), t = textInput.value.trim(), has = !!(u || t);
