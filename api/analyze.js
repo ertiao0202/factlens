@@ -1,13 +1,18 @@
+// 告诉 Vercel 这是 Edge Runtime
+export const config = { runtime: 'edge' };
+
 export default async function handler(req) {
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method Not Allowed' }),
       { status: 405, headers: { 'Content-Type': 'application/json' } });
   }
+
   const { content, title } = await req.json();
   if (!content || !title) {
     return new Response(JSON.stringify({ error: '缺少 content 或 title' }),
       { status: 400, headers: { 'Content-Type': 'application/json' } });
   }
+
   const prompt = `【角色】你是明鉴AI，专做“事实-观点-偏见”三色拆解，风格犀利、简洁、中性。
 【输入】Markdown正文如下：
 ${content}
@@ -54,7 +59,7 @@ xxx
         max_tokens: 2048
       })
     });
-    if (!moonResp.ok) throw new Error('Moonshot 返回异常');
+    if (!moonResp.ok) throw new Error('Moonshot API 异常');
     const json = await moonResp.json();
     const markdown = json.choices[0].message.content;
     return new Response(JSON.stringify({ markdown }), {
