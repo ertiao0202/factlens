@@ -284,90 +284,90 @@ ${content}`;
     return r;
   }
 
-  /* ===== 竖版长图：750 宽，高度自动 ===== */
+  /* ===== 竖版长图：840 宽，字体 = 网页版 ===== */
   function generateShareImage(d) {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    const width = 750;                          // 手机宽度
-    const margin = 40;                          // 左右边距
-    const innerWidth = width - margin * 2;      // 可用宽度
-    const lineHeight = 28;                      // 正文行距
-    const headH = 120;                          // 头部高度
-    const barH = 35;                            // 每条条形图高度
-    const moduleGap = 25;                       // 模块间距
-    let y = headH;                              // 当前纵坐标
+    const width = 840;
+    const margin = 60;
+    const innerWidth = width - margin * 2;
+    const lineHeight = 36;           // 与网页正文接近
+    const headH = 160;               // 头部更高
+    const moduleGap = 45;
+    let y = headH;
 
-    // 1. 动态计算画布高度
-    const conclusionLines = Math.ceil($('total-conclusion').textContent.length / (innerWidth / 18));
-    const factLines = d.facts.reduce((a, f) => a + Math.ceil(f.length / (innerWidth / 16)), 0);
-    const opinionLines = d.opinions.reduce((a, o) => a + Math.ceil(o.length / (innerWidth / 16)), 0);
-    const biasLines = 5; // 4 指标 + 倾向
-    const radarSize = 200; // 手机版雷达
-    const totalHeight = headH + conclusionLines * lineHeight + moduleGap * 4
-      + d.facts.length * (lineHeight + 10) + factLines * 10
-      + d.opinions.length * (lineHeight + 10) + opinionLines * 10
-      + biasLines * (lineHeight - 5) + radarSize + 80; // 底部留空
+    // 动态高度（按网页字号比例）
+    const conclusionLines = Math.ceil($('total-conclusion').textContent.length / (innerWidth / 22));
+    const totalHeight = headH + conclusionLines * lineHeight + moduleGap * 5
+      + d.facts.length * (lineHeight + 18) + 120
+      + d.opinions.length * (lineHeight + 18) + 120
+      + 6 * (lineHeight - 5) + 340;   // 雷达 + 底部
 
     canvas.width = width;
     canvas.height = totalHeight;
 
-    // 2. 背景渐变
+    // 背景：与网页一致
     const grd = ctx.createLinearGradient(0, 0, 0, totalHeight);
     grd.addColorStop(0, '#ffffff');
     grd.addColorStop(1, '#f8fafc');
     ctx.fillStyle = grd;
     ctx.fillRect(0, 0, width, totalHeight);
 
-    // 3. 头部 Logo + 标题
+    // 1. 头部：Noto Serif SC 700（与网页标题一致）
     ctx.fillStyle = '#3b82f6';
     ctx.beginPath();
-    ctx.roundRect(margin, 30, 60, 60, 12);
+    ctx.roundRect(margin, 50, 70, 70, 16);
     ctx.fill();
     ctx.fillStyle = '#fff';
-    ctx.font = '32px FontAwesome';
-    ctx.fillText('\uf002', margin + 18, 68);
-    ctx.fillStyle = '#111827';
-    ctx.font = 'bold 28px "Noto Sans SC"';
-    ctx.fillText('FactLens 明鉴AI', margin + 80, 55);
-    ctx.fillStyle = '#6b7280';
-    ctx.font = '18px "Noto Sans SC"';
-    ctx.fillText('三分钟拆「事实-观点-偏见」', margin + 80, 80);
+    ctx.font = 'bold 42px "Noto Serif SC"';
+    ctx.fillText('明鉴AI', margin + 90, 85);
+    ctx.font = '20px "Noto Sans SC"';
+    ctx.fillText('三分钟拆「事实/观点/偏见」', margin + 90, 110);
 
-    // 4. 结论
-    y = headH + 10;
-    ctx.font = '22px "Noto Sans SC"';
+    // 2. 结论：Noto Sans SC 400
+    y = headH + 30;
+    ctx.font = '24px "Noto Sans SC"';
     ctx.fillStyle = '#374151';
     wrapText(ctx, $('total-conclusion').textContent, margin, y, innerWidth, lineHeight);
-    y += (Math.ceil($('total-conclusion').textContent.length / (innerWidth / 18)) + 1) * lineHeight;
+    y += (Math.ceil($('total-conclusion').textContent.length / (innerWidth / 22)) + 1) * lineHeight + moduleGap;
 
-    // 5. 事实模块
-    drawModule(ctx, '哪些是事实', d.facts, '#1e40af', '#eff6ff', y, innerWidth, lineHeight);
-    y += (d.facts.length + 2) * (lineHeight + 10) + moduleGap;
+    // 3. 事实模块
+    drawModule(ctx, '哪些是事实', d.facts, '#1e40af', '#eff6ff', y, innerWidth, lineHeight, '');
+    y += (d.facts.length + 3) * (lineHeight + 18) + 120;
 
-    // 6. 观点模块
-    drawModule(ctx, '哪些是观点', d.opinions, '#059669', '#f0fdf4', y, innerWidth, lineHeight);
-    y += (d.opinions.length + 2) * (lineHeight + 10) + moduleGap;
+    // 4. 观点模块
+    drawModule(ctx, '哪些是观点', d.opinions, '#059669', '#f0fdf4', y, innerWidth, lineHeight, '');
+    y += (d.opinions.length + 3) * (lineHeight + 18) + 120;
 
-    // 7. 偏见模块
+    // 5. 偏见模块
     drawBias(ctx, y, innerWidth, lineHeight);
-    y += 5 * (lineHeight - 5) + moduleGap;
+    y += 6 * (lineHeight - 5) + moduleGap;
 
-    // 8. 迷你雷达（手机版）
-    drawMobileRadar(ctx, width / 2 - radarSize / 2, y, radarSize, [
+    // 6. 雷达：手机版 + 分值
+    drawMobileRadar(ctx, width / 2 - 150, y, 300, [
       { label: '信源', value: parseFloat($('ts-score').textContent) },
       { label: '事实', value: parseFloat($('fd-score').textContent) },
       { label: '情绪', value: parseFloat($('eb-score').textContent) },
       { label: '一致', value: parseFloat($('cs-score').textContent) }
     ]);
+    y += 340 + moduleGap;
 
-    // 9. 原文网址（底部）
-    y += radarSize + 30;
+    // 7. 底部：短网址 + 二维码占位
+    const url = $('url-input').value || '直接粘贴文本';
+    const shortUrl = url.length > 48 ? url.slice(0, 45) + '...' : url;
     ctx.fillStyle = '#9ca3af';
     ctx.font = '18px "Noto Sans SC"';
-    const urlText = '原文：' + ($('url-input').value || '直接粘贴文本');
-    wrapText(ctx, urlText, margin, y, innerWidth, 22);
+    ctx.fillText('原文：' + shortUrl, margin, y);
+    // 二维码空白占位
+    ctx.strokeStyle = '#d1d5db';
+    ctx.beginPath();
+    ctx.roundRect(width - margin - 120, y - 25, 120, 120, 12);
+    ctx.stroke();
+    ctx.fillStyle = '#9ca3af';
+    ctx.font = '14px "Noto Sans SC"';
+    ctx.fillText('扫码体验', width - margin - 90, y + 100);
 
-    // 10. 下载
+    // 8. 下载
     canvas.toBlob(blob => {
       const link = document.createElement('a');
       link.download = '明鉴AI报告_' + Date.now() + '.png';
@@ -376,32 +376,40 @@ ${content}`;
     });
   }
 
-  /* ===== 画模块：标题 + 列表 ===== */
-  function drawModule(ctx, title, list, color, bg, y, innerWidth, lineHeight) {
-    // 标题
+  /* ===== 画模块：标题 + 列表 + 图标 ===== */
+  function drawModule(ctx, title, list, color, bg, y, innerWidth, lineHeight, icon) {
+    // 标题：Noto Serif SC 700
     ctx.fillStyle = color;
-    ctx.font = 'bold 24px "Noto Sans SC"';
-    ctx.fillText(title, 40, y);
-    y += lineHeight + 10;
-    // 列表
+    ctx.font = 'bold 30px "Noto Serif SC"';
+    ctx.fillText(title, margin + 60, y);
+    ctx.font = '30px FontAwesome';
+    ctx.fillText(icon, margin, y);
+    y += lineHeight + 25;
+    // 列表：Noto Sans SC 400
     list.forEach((item, i) => {
       ctx.fillStyle = bg;
       ctx.beginPath();
-      ctx.roundRect(40, y - lineHeight / 2, innerWidth, lineHeight + 5, 8);
+      ctx.roundRect(margin, y - lineHeight / 2, innerWidth, lineHeight + 12, 14);
       ctx.fill();
       ctx.fillStyle = '#374151';
-      ctx.font = '20px "Noto Sans SC"';
-      wrapText(ctx, (i + 1) + '. ' + item, 50, y + 6, innerWidth - 20, lineHeight);
-      y += (Math.ceil(item.length / ((innerWidth - 20) / 18)) + 1) * (lineHeight + 5);
+      ctx.font = '22px "Noto Sans SC"';
+      wrapText(ctx, (i + 1) + '. ' + item, margin + 20, y + 8, innerWidth - 40, lineHeight);
+      y += (Math.ceil(item.length / ((innerWidth - 40) / 22)) + 1) * (lineHeight + 18);
     });
+    // 分隔线
+    ctx.strokeStyle = '#e5e7eb';
+    ctx.beginPath();
+    ctx.moveTo(margin, y + 30);
+    ctx.lineTo(width - margin, y + 30);
+    ctx.stroke();
   }
 
   /* ===== 画偏见指标 ===== */
   function drawBias(ctx, y, innerWidth, lineHeight) {
     ctx.fillStyle = '#dc2626';
-    ctx.font = 'bold 24px "Noto Sans SC"';
-    ctx.fillText('是否有偏见', 40, y);
-    y += lineHeight + 10;
+    ctx.font = 'bold 30px "Noto Serif SC"';
+    ctx.fillText('是否有偏见', margin, y);
+    y += lineHeight + 25;
     const items = [
       { k: '情绪化词汇', v: $('emotional-words').textContent },
       { k: '二元对立', v: $('binary-opposition').textContent },
@@ -410,15 +418,15 @@ ${content}`;
     ];
     items.forEach(it => {
       ctx.fillStyle = '#374151';
-      ctx.font = '20px "Noto Sans SC"';
-      ctx.fillText(it.k, 40, y);
+      ctx.font = '22px "Noto Sans SC"';
+      ctx.fillText(it.k, margin, y);
       ctx.fillStyle = it.k === '整体倾向' ? '#059669' : '#dc2626';
-      ctx.fillText(it.v, innerWidth + 40 - ctx.measureText(it.v).width, y);
+      ctx.fillText(it.v, innerWidth + margin - ctx.measureText(it.v).width, y);
       y += lineHeight - 5;
     });
   }
 
-  /* ===== 手机版迷你雷达 ===== */
+  /* ===== 手机版雷达（居中+分值） ===== */
   function drawMobileRadar(ctx, x, y, size, data) {
     const angleStep = (Math.PI * 2) / 4;
     const centerX = x + size / 2;
@@ -429,8 +437,7 @@ ${content}`;
     for (let i = 0; i < 4; i++) {
       const angle = i * angleStep - Math.PI / 2;
       ctx.moveTo(centerX, centerY);
-      ctx.lineTo(centerX + Math.cos(angle) * size / 2,
-                 centerY + Math.sin(angle) * size / 2);
+      ctx.lineTo(centerX + Math.cos(angle) * size / 2, centerY + Math.sin(angle) * size / 2);
     }
     ctx.stroke();
     // 数据面
@@ -447,24 +454,16 @@ ${content}`;
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
-  }
-
-  /* ===== 文字换行 ===== */
-  function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
-    const chars = text.split('');
-    let line = '';
-    for (let n = 0; n < chars.length; n++) {
-      const testLine = line + chars[n];
-      const metrics = ctx.measureText(testLine);
-      if (metrics.width > maxWidth && n > 0) {
-        ctx.fillText(line, x, y);
-        line = chars[n];
-        y += lineHeight;
-      } else {
-        line = testLine;
-      }
-    }
-    ctx.fillText(line, x, y);
+    // 分值标签
+    ctx.fillStyle = '#3b82f6';
+    ctx.font = '20px "Noto Sans SC"';
+    data.forEach((d, i) => {
+      const angle = i * angleStep - Math.PI / 2;
+      const r = size / 2 + 40;
+      const px = centerX + Math.cos(angle) * r;
+      const py = centerY + Math.sin(angle) * r;
+      ctx.fillText(d.label + ' ' + d.value.toFixed(1), px - 18, py + 6);
+    });
   }
 
   /* ===== 雷达主图 ===== */
@@ -479,7 +478,7 @@ ${content}`;
         datasets: [{ label: '得分', data: data, backgroundColor: 'rgba(59, 130, 246, 0.2)', borderColor: 'rgba(59, 130, 246, 1)', pointBackgroundColor: 'rgba(59, 130, 246, 1)', pointBorderColor: '#fff', pointHoverBackgroundColor: '#fff', pointHoverBorderColor: 'rgba(59, 130, 246, 1)' }]
       },
       options: { scales: { r: { angleLines: false, suggestedMin: 0, suggestedMax: 10 } }, plugins: { legend: { display: false } } }
-    });
+    );
   }
 
   /* ===== 绑定 ===== */
@@ -599,7 +598,7 @@ ${content}`;
       $('downloadBtn').classList.remove('hidden');
       $('downloadBtn').onclick = () => generateShareImage(d);
 
-      drawRadar([ts, fd, eb, cs]);
+      drawRadar([ts, fd + 0.01, eb, cs]); // +0.01 避免 0 分导致雷达为空
     }
   });
 </script>
