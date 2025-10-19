@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     clearBtn.addEventListener('click', () => { input.value = ''; input.dispatchEvent(new Event('input')); });
   });
 
+  /* 关键：存在才绑定 */
   if (analyzeBtn) analyzeBtn.addEventListener('click', startAnalysis);
 
   async function startAnalysis() {
