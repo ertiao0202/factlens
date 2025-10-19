@@ -20,10 +20,13 @@
     .url-input:focus{border-color:var(--accent-color);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
     .analyze-btn{@apply w-full lg:w-auto px-12 py-4 text-white font-semibold rounded-lg flex items-center justify-center space-x-2 text-lg; background:linear-gradient(135deg,var(--accent-color),#8b5cf6);transition:all .3s ease}
     .analyze-btn:hover{transform:translateY(-2px);box-shadow:0 10px 25px rgba(59,130,246,.3)}
+    .analyze-btn:disabled{opacity:.6;cursor:not-allowed}
     .loading-spinner{animation:spin 1s linear infinite}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
     .fade-in{animation:fadeIn .5s ease-in}@keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
     .section-fact{border-left:4px solid var(--fact-color)}.section-opinion{border-left:4px solid var(--opinion-color)}.section-bias{border-left:4px solid var(--bias-color)}
     .mono-font{font-family:'JetBrains Mono',monospace}
+    /* 模态框背景 */
+    .modal-bg{background:rgba(0,0,0,.45);backdrop-filter:blur(4px)}
   </style>
 </head>
 <body class="text-gray-900">
@@ -108,9 +111,83 @@
     </div>
   </main>
 
+  <!-- 页脚：隐私政策 + 用户协议 -->
   <footer class="bg-gray-50 border-t border-gray-200 mt-16">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-gray-600"><p class="mb-2">© 2024 FactLens 明鉴AI. 专业内容分析工具</p><p class="text-sm">Powered by AI | Designed for Truth</p></div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-gray-600">
+      <div class="mb-2">
+        <button onclick="openModal('privacy')" class="text-gray-500 hover:text-blue-600 mx-2">隐私政策</button>
+        ·
+        <button onclick="openModal('terms')" class="text-gray-500 hover:text-blue-600 mx-2">用户协议</button>
+      </div>
+      <p class="mb-2">© 2024 FactLens 明鉴AI. 专业内容分析工具</p>
+      <p class="text-sm">Powered by AI | Designed for Truth</p>
+    </div>
   </footer>
+
+  <!-- ===== 模态框 ===== -->
+  <div id="modal-bg" class="fixed inset-0 z-50 modal-bg hidden" onclick="closeModal()"></div>
+  <div id="modal-panel" class="fixed inset-0 z-50 flex items-center justify-center px-4 hidden">
+    <div class="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-auto shadow-2xl">
+      <div class="flex justify-between items-center mb-4">
+        <h3 id="modal-title" class="text-lg font-semibold text-gray-900"></h3>
+        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+      </div>
+      <div id="modal-body" class="text-gray-700 leading-relaxed"></div>
+      <div class="mt-6 text-right">
+        <button onclick="closeModal()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 模态框内容 ===== -->
+  <script>
+    const modalData = {
+      privacy: {
+        title: '隐私政策',
+        body: `
+          <p>生效日期：2024-06-01</p>
+          <p class="mt-2"><strong>1. 信息收集</strong></p>
+          <p>我们仅在你主动输入网址或粘贴文本时临时处理相关内容，不会保存、上传或分享给任何第三方。</p>
+          <p class="mt-2"><strong>2. 日志与统计</strong></p>
+          <p>为改进服务，系统可能记录匿名化的访问日志（IP 脱敏、时间戳、是否成功），该数据不含任何可识别个人身份的信息。</p>
+          <p class="mt-2"><strong>3. Cookie 与本地存储</strong></p>
+          <p>本服务未使用 Cookie；仅在浏览器本地存储（localStorage）中缓存同一网址的分析结果，以减少重复调用。</p>
+          <p class="mt-2"><strong>4. 第三方服务</strong></p>
+          <p>我们使用 Moonshot（月之暗面）提供的 Kimi API 进行文本分析，调用过程遵循其<a class="text-blue-600 hover:underline" href="https://platform.moonshot.cn/docs/terms" target="_blank">服务条款</a>。</p>
+          <p class="mt-2"><strong>5. 联系我们</strong></p>
+          <p>如对本政策有疑问，请通过页面底部邮箱与我们联系。</p>
+        `
+      },
+      terms: {
+        title: '用户协议',
+        body: `
+          <p>生效日期：2024-06-01</p>
+          <p class="mt-2"><strong>1. 接受条款</strong></p>
+          <p>使用本站即表示你已阅读并同意本协议；若不同意，请停止使用。</p>
+          <p class="mt-2"><strong>2. 使用规范</strong></p>
+          <p>不得输入或上传任何违法、暴力、色情、侵权等内容；否则我们有权拒绝服务并封禁相关请求。</p>
+          <p class="mt-2"><strong>3. 分析结果</strong></p>
+          <p>AI 结论仅供参考，不构成法律、投资、新闻等专业意见，使用者应自行判断并承担风险。</p>
+          <p class="mt-2"><strong>4. 服务变更</strong></p>
+          <p>我们可随时更新或终止部分功能，恕不另行通知。</p>
+          <p class="mt-2"><strong>5. 责任限制</strong></p>
+          <p>在适用法律允许范围内，我们对因使用或无法使用本服务而产生的任何直接、间接损失不承担责任。</p>
+        `
+      }
+    };
+
+    function openModal(type) {
+      const data = modalData[type];
+      $('modal-title').innerText = data.title;
+      $('modal-body').innerHTML = data.body;
+      $('modal-bg').classList.remove('hidden');
+      $('modal-panel').classList.remove('hidden');
+    }
+    function closeModal() {
+      $('modal-bg').classList.add('hidden');
+      $('modal-panel').classList.add('hidden');
+    }
+  </script>
 
   <script>
     /* ===== 保护：Chart 加载失败也不阻断后续 ===== */
@@ -130,10 +207,9 @@
           const res = await fetch(mirrors[i](url), { signal: AbortSignal.timeout(8000) });
           if (!res.ok) continue;
           const text = await res.text();
-          // 新增：软拦截关键词
           if (/(请完成验证|Sina Visitor System|百度安全验证|需验证|请开启 JavaScript|访客验证|无法访问|403 Forbidden|404 Not Found|Access Denied|Please enable cookies|完成验证后方可继续访问)/i.test(text)) {
             console.warn('[FactLens] 遇到验证页，尝试下一镜像');
-            continue; // 直接换镜像重试
+            continue;
           }
           return text;
         } catch (e) {
@@ -145,7 +221,7 @@
 
     /* ===== 增强校验：长度+关键词 ===== */
     function isValidBody(text) {
-      if (!text || text.length < 60) return false; // 长度提高到 60
+      if (!text || text.length < 60) return false;
       const invalid = /(请完成验证|百度安全验证|Sina Visitor System|请开启 JavaScript|访客验证|无法访问|403 Forbidden|404 Not Found|Access Denied|Please enable cookies|完成验证后方可继续访问)/i;
       return !invalid.test(text);
     }
@@ -262,9 +338,14 @@ ${content}`;
       sampleBtn.addEventListener('click', () => { alert('示例功能已移除，请输入URL或粘贴文本进行真实分析。'); urlInput.focus(); });
 
       async function startAnalysis() {
-        console.log('[FactLens] 按钮已点击'); // ← 调试用，确认事件已进
+        console.log('[FactLens] 按钮已点击');
         const url = urlInput.value.trim(), text = textInput.value.trim();
         if (!url && !text) return;
+
+        // 加载态：防连点 + 文案变更
+        analyzeBtn.disabled = true;
+        analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>分析中…</span>';
+
         progressSection.classList.remove('hidden');
         resultsSection.classList.add('hidden');
         fourDimCard.classList.add('hidden');
@@ -297,22 +378,20 @@ ${content}`;
           $('progress-bar').style.width = '100%';
           $('total-conclusion').textContent =
             err.message === 'NO_VALID_BODY'
-              ? '因网站设置原因，明鉴AI无法访问原始内容，请复制粘贴文本内容直接进行分析。'
-              : '分析过程出现异常，请稍后重试。';
+              ? '该网站暂时无法自动抓取，请复制正文到下方文本框再试一次'
+              : '分析过程出现异常，请稍后重试';
           $('summary-banner').classList.remove('hidden');
           resultsSection.classList.add('hidden');
           fourDimCard.classList.add('hidden');
-          setTimeout(() => progressSection.classList.add('hidden'), 1500);
-          return;
+          setTimeout(() => {
+            progressSection.classList.add('hidden');
+            textInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 1500);
+        } finally {
+          // 无论成功/失败/异常，都恢复按钮
+          analyzeBtn.disabled = false;
+          analyzeBtn.innerHTML = '<i class="fas fa-search"></i><span>明鉴一下</span>';
         }
-
-        setTimeout(() => {
-          progressSection.classList.add('hidden');
-          resultsSection.classList.remove('hidden');
-          fourDimCard.classList.remove('hidden');
-          resultsSection.classList.add('fade-in');
-          fourDimCard.classList.add('fade-in');
-        }, 1000);
       }
 
       function displayResults(d) {
@@ -367,7 +446,7 @@ ${content}`;
       }
 
       function drawRadar(data) {
-        if (!window.Chart) {                                // 保护：Chart 加载失败就跳过
+        if (!window.Chart) {
           console.warn('[FactLens] Chart.js 未加载，雷达图跳过');
           return;
         }
