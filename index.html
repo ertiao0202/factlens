@@ -284,63 +284,90 @@ ${content}`;
     return r;
   }
 
-  /* ===== 内存画布：分享图含网址+雷达 ===== */
+  /* ===== 竖版长图：750 宽，高度自动 ===== */
   function generateShareImage(d) {
     const canvas = document.createElement('canvas');
-    canvas.width = 400;
-    canvas.height = 300;
     const ctx = canvas.getContext('2d');
-    // 背景渐变
-    const grd = ctx.createLinearGradient(0, 0, 0, 300);
+    const width = 750;                          // 手机宽度
+    const margin = 40;                          // 左右边距
+    const innerWidth = width - margin * 2;      // 可用宽度
+    const lineHeight = 28;                      // 正文行距
+    const headH = 120;                          // 头部高度
+    const barH = 35;                            // 每条条形图高度
+    const moduleGap = 25;                       // 模块间距
+    let y = headH;                              // 当前纵坐标
+
+    // 1. 动态计算画布高度
+    const conclusionLines = Math.ceil($('total-conclusion').textContent.length / (innerWidth / 18));
+    const factLines = d.facts.reduce((a, f) => a + Math.ceil(f.length / (innerWidth / 16)), 0);
+    const opinionLines = d.opinions.reduce((a, o) => a + Math.ceil(o.length / (innerWidth / 16)), 0);
+    const biasLines = 5; // 4 指标 + 倾向
+    const radarSize = 200; // 手机版雷达
+    const totalHeight = headH + conclusionLines * lineHeight + moduleGap * 4
+      + d.facts.length * (lineHeight + 10) + factLines * 10
+      + d.opinions.length * (lineHeight + 10) + opinionLines * 10
+      + biasLines * (lineHeight - 5) + radarSize + 80; // 底部留空
+
+    canvas.width = width;
+    canvas.height = totalHeight;
+
+    // 2. 背景渐变
+    const grd = ctx.createLinearGradient(0, 0, 0, totalHeight);
     grd.addColorStop(0, '#ffffff');
     grd.addColorStop(1, '#f8fafc');
     ctx.fillStyle = grd;
-    ctx.fillRect(0, 0, 400, 300);
-    // 头部
+    ctx.fillRect(0, 0, width, totalHeight);
+
+    // 3. 头部 Logo + 标题
     ctx.fillStyle = '#3b82f6';
     ctx.beginPath();
-    ctx.roundRect(20, 20, 40, 40, 8);
+    ctx.roundRect(margin, 30, 60, 60, 12);
     ctx.fill();
     ctx.fillStyle = '#fff';
-    ctx.font = '20px FontAwesome';
-    ctx.fillText('\uf002', 32, 45);
+    ctx.font = '32px FontAwesome';
+    ctx.fillText('\uf002', margin + 18, 68);
     ctx.fillStyle = '#111827';
-    ctx.font = 'bold 16px "Noto Sans SC"';
-    ctx.fillText('FactLens 明鉴AI', 70, 35);
+    ctx.font = 'bold 28px "Noto Sans SC"';
+    ctx.fillText('FactLens 明鉴AI', margin + 80, 55);
     ctx.fillStyle = '#6b7280';
-    ctx.font = '12px "Noto Sans SC"';
-    ctx.fillText('三分钟拆「事实/观点/偏见」', 70, 50);
-    // 结论
-    const conclusion = $('total-conclusion').textContent;
-    ctx.font = '13px "Noto Sans SC"';
+    ctx.font = '18px "Noto Sans SC"';
+    ctx.fillText('三分钟拆「事实-观点-偏见」', margin + 80, 80);
+
+    // 4. 结论
+    y = headH + 10;
+    ctx.font = '22px "Noto Sans SC"';
     ctx.fillStyle = '#374151';
-    wrapText(ctx, conclusion, 20, 80, 360, 18);
-    // 四维条形
-    const barStart = 120;
-    const scores = [
-      { label: '信源透明度', value: parseFloat($('ts-score').textContent), color: '#2563eb' },
-      { label: '事实密度', value: parseFloat($('fd-score').textContent), color: '#16a34a' },
-      { label: '情绪中立度', value: parseFloat($('eb-score').textContent), color: '#f97316' },
-      { label: '一致性', value: parseFloat($('cs-score').textContent), color: '#9333ea' }
-    ];
-    scores.forEach((s, i) => {
-      ctx.fillStyle = '#6b7280';
-      ctx.font = '12px "Noto Sans SC"';
-      ctx.fillText(s.label, 20, barStart + i * 35);
-      ctx.fillText(s.value.toFixed(1), 340, barStart + i * 35);
-      ctx.fillStyle = s.color;
-      ctx.beginPath();
-      ctx.roundRect(20, barStart + i * 35 + 8, (s.value / 10) * 300, 8, 4);
-      ctx.fill();
-    });
-    // 迷你雷达
-    drawMiniRadar(ctx, 300, 200, 60, scores);
-    // 原文网址
-    const url = $('url-input').value || '直接粘贴文本';
+    wrapText(ctx, $('total-conclusion').textContent, margin, y, innerWidth, lineHeight);
+    y += (Math.ceil($('total-conclusion').textContent.length / (innerWidth / 18)) + 1) * lineHeight;
+
+    // 5. 事实模块
+    drawModule(ctx, '哪些是事实', d.facts, '#1e40af', '#eff6ff', y, innerWidth, lineHeight);
+    y += (d.facts.length + 2) * (lineHeight + 10) + moduleGap;
+
+    // 6. 观点模块
+    drawModule(ctx, '哪些是观点', d.opinions, '#059669', '#f0fdf4', y, innerWidth, lineHeight);
+    y += (d.opinions.length + 2) * (lineHeight + 10) + moduleGap;
+
+    // 7. 偏见模块
+    drawBias(ctx, y, innerWidth, lineHeight);
+    y += 5 * (lineHeight - 5) + moduleGap;
+
+    // 8. 迷你雷达（手机版）
+    drawMobileRadar(ctx, width / 2 - radarSize / 2, y, radarSize, [
+      { label: '信源', value: parseFloat($('ts-score').textContent) },
+      { label: '事实', value: parseFloat($('fd-score').textContent) },
+      { label: '情绪', value: parseFloat($('eb-score').textContent) },
+      { label: '一致', value: parseFloat($('cs-score').textContent) }
+    ]);
+
+    // 9. 原文网址（底部）
+    y += radarSize + 30;
     ctx.fillStyle = '#9ca3af';
-    ctx.font = '10px "Noto Sans SC"';
-    wrapText(ctx, '原文：' + url, 20, 295, 360, 14);
-    // 下载
+    ctx.font = '18px "Noto Sans SC"';
+    const urlText = '原文：' + ($('url-input').value || '直接粘贴文本');
+    wrapText(ctx, urlText, margin, y, innerWidth, 22);
+
+    // 10. 下载
     canvas.toBlob(blob => {
       const link = document.createElement('a');
       link.download = '明鉴AI报告_' + Date.now() + '.png';
@@ -349,8 +376,50 @@ ${content}`;
     });
   }
 
-  /* ===== 迷你雷达 ===== */
-  function drawMiniRadar(ctx, x, y, size, data) {
+  /* ===== 画模块：标题 + 列表 ===== */
+  function drawModule(ctx, title, list, color, bg, y, innerWidth, lineHeight) {
+    // 标题
+    ctx.fillStyle = color;
+    ctx.font = 'bold 24px "Noto Sans SC"';
+    ctx.fillText(title, 40, y);
+    y += lineHeight + 10;
+    // 列表
+    list.forEach((item, i) => {
+      ctx.fillStyle = bg;
+      ctx.beginPath();
+      ctx.roundRect(40, y - lineHeight / 2, innerWidth, lineHeight + 5, 8);
+      ctx.fill();
+      ctx.fillStyle = '#374151';
+      ctx.font = '20px "Noto Sans SC"';
+      wrapText(ctx, (i + 1) + '. ' + item, 50, y + 6, innerWidth - 20, lineHeight);
+      y += (Math.ceil(item.length / ((innerWidth - 20) / 18)) + 1) * (lineHeight + 5);
+    });
+  }
+
+  /* ===== 画偏见指标 ===== */
+  function drawBias(ctx, y, innerWidth, lineHeight) {
+    ctx.fillStyle = '#dc2626';
+    ctx.font = 'bold 24px "Noto Sans SC"';
+    ctx.fillText('是否有偏见', 40, y);
+    y += lineHeight + 10;
+    const items = [
+      { k: '情绪化词汇', v: $('emotional-words').textContent },
+      { k: '二元对立', v: $('binary-opposition').textContent },
+      { k: '动机揣测', v: $('motivation-guessing').textContent },
+      { k: '整体倾向', v: $('overall-tendency').textContent }
+    ];
+    items.forEach(it => {
+      ctx.fillStyle = '#374151';
+      ctx.font = '20px "Noto Sans SC"';
+      ctx.fillText(it.k, 40, y);
+      ctx.fillStyle = it.k === '整体倾向' ? '#059669' : '#dc2626';
+      ctx.fillText(it.v, innerWidth + 40 - ctx.measureText(it.v).width, y);
+      y += lineHeight - 5;
+    });
+  }
+
+  /* ===== 手机版迷你雷达 ===== */
+  function drawMobileRadar(ctx, x, y, size, data) {
     const angleStep = (Math.PI * 2) / 4;
     const centerX = x + size / 2;
     const centerY = y + size / 2;
