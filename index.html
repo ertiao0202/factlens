@@ -5,11 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FactLens 明鉴AI - 四维分析</title>
 
-  <!-- 国内可访问、带版本号的 CDN -->
   <script src="https://cdn.tailwindcss.com/3.4.0"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
-
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root{--primary-color:#1a1d29;--secondary-color:#6b7280;--accent-color:#3b82f6;--fact-color:#1e40af;--opinion-color:#059669;--bias-color:#dc2626;--bg-color:#ffffff;--text-color:#111827}
@@ -25,7 +23,6 @@
     .fade-in{animation:fadeIn .5s ease-in}@keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
     .section-fact{border-left:4px solid var(--fact-color)}.section-opinion{border-left:4px solid var(--opinion-color)}.section-bias{border-left:4px solid var(--bias-color)}
     .mono-font{font-family:'JetBrains Mono',monospace}
-    /* 模态框背景 */
     .modal-bg{background:rgba(0,0,0,.45);backdrop-filter:blur(4px)}
   </style>
 </head>
@@ -37,7 +34,7 @@
           <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center"><i class="fas fa-search text-white text-sm"></i></div>
           <h1 class="text-xl font-semibold text-gray-900">FactLens 明鉴AI</h1>
         </div>
-        <div class="flex space-x-6"><a href="#" class="text-gray-600 hover:text-blue-600 transition-colors">首页</a><a href="#" class="text-gray-600 hover:text-blue-600 transition-colors">关于</a><a href="#" class="text-gray-600 hover:text-blue-600 transition-colors">示例</a></div>
+        <div class="flex space-x-6"><a href="#" class="text-gray-600 hover:text-blue-600 transition-colors">首页</a><a href="#" class="text-gray-600 hover:text-blue-600 transition-colors">关于</a></div>
       </div>
     </div>
   </nav>
@@ -191,6 +188,30 @@
     /* ===== 通用工具 ===== */
     const $ = id => document.getElementById(id);
 
+    /* ===== 48h 缓存：key = url + 内容前200字符 hash ===== */
+    function cacheKey(url, text = '') {
+      const prefix = (url || text).slice(0, 200);
+      return 'fCache_' + (url || 'text') + '_' + Math.abs(hashCode(prefix));
+    }
+    function hashCode(str) {
+      let h = 0, i = 0, l = str.length;
+      while (i < l) h = ((h << 5) - h + str.charCodeAt(i++)) | 0;
+      return h;
+    }
+    function getCache(key) {
+      try {
+        const item = localStorage.getItem(key);
+        if (!item) return null;
+        const { ts, data } = JSON.parse(item);
+        return Date.now() - ts < 48 * 3600 * 1000 ? data : null;
+      } catch { return null; }
+    }
+    function setCache(key, data) {
+      try {
+        localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data }));
+      } catch {}
+    }
+
     /* ===== 增强抓取：自动重试 + 软拦截检测 ===== */
     async function fetchText(url, maxTry = 2) {
       const mirrors = [
@@ -316,7 +337,7 @@ ${content}`;
 
     /* ===== DOM 绑定 ===== */
     document.addEventListener('DOMContentLoaded', () => {
-      const analyzeBtn = $('analyze-btn'), sampleBtn = $('sample-btn'), urlInput = $('url-input'), textInput = $('text-input'), progressSection = $('progress-section'), resultsSection = $('results-section'), fourDimCard = $('four-dim-card'), clearBtn = $('clear-btn'), clearTextBtn = $('clear-text-btn');
+      const analyzeBtn = $('analyze-btn'), urlInput = $('url-input'), textInput = $('text-input'), progressSection = $('progress-section'), resultsSection = $('results-section'), fourDimCard = $('four-dim-card'), clearBtn = $('clear-btn'), clearTextBtn = $('clear-text-btn');
       function toggleBtn() {
         const u = urlInput.value.trim(), t = textInput.value.trim(), has = !!(u || t);
         analyzeBtn.disabled = !has;
@@ -330,12 +351,16 @@ ${content}`;
       clearTextBtn.addEventListener('click', () => { textInput.value = ''; toggleBtn(); textInput.focus(); });
       urlInput.addEventListener('paste', e => setTimeout(() => urlInput.dispatchEvent(new Event('input')), 0));
       analyzeBtn.addEventListener('click', startAnalysis);
-      sampleBtn.addEventListener('click', () => { alert('示例功能已移除，请输入URL或粘贴文本进行真实分析。'); urlInput.focus(); });
 
       async function startAnalysis() {
         console.log('[FactLens] 按钮已点击');
         const url = urlInput.value.trim(), text = textInput.value.trim();
         if (!url && !text) return;
+
+        // 加载态：防连点 + 文案变更
+        analyzeBtn.disabled = true;
+        analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>分析中…</span>';
+
         progressSection.classList.remove('hidden');
         resultsSection.classList.add('hidden');
         fourDimCard.classList.add('hidden');
@@ -368,22 +393,20 @@ ${content}`;
           $('progress-bar').style.width = '100%';
           $('total-conclusion').textContent =
             err.message === 'NO_VALID_BODY'
-              ? '因网站设置原因，明鉴AI无法访问原始内容，请复制粘贴文本内容直接进行分析。'
-              : '分析过程出现异常，请稍后重试。';
+              ? '该网站暂时无法自动抓取，请复制正文到下方文本框再试一次'
+              : '分析过程出现异常，请稍后重试';
           $('summary-banner').classList.remove('hidden');
           resultsSection.classList.add('hidden');
           fourDimCard.classList.add('hidden');
-          setTimeout(() => progressSection.classList.add('hidden'), 1500);
-          return;
+          setTimeout(() => {
+            progressSection.classList.add('hidden');
+            textInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 1500);
+        } finally {
+          // 无论成功/失败/异常，都恢复按钮
+          analyzeBtn.disabled = false;
+          analyzeBtn.innerHTML = '<i class="fas fa-search"></i><span>明鉴一下</span>';
         }
-
-        setTimeout(() => {
-          progressSection.classList.add('hidden');
-          resultsSection.classList.remove('hidden');
-          fourDimCard.classList.remove('hidden');
-          resultsSection.classList.add('fade-in');
-          fourDimCard.classList.add('fade-in');
-        }, 1000);
       }
 
       function displayResults(d) {
