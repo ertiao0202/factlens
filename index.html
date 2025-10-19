@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FactLens 明鉴AI - 四维分析</title>
 
@@ -9,6 +9,8 @@
   <script src="https://cdn.tailwindcss.com/3.4.0"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+  <!-- 新增：html2canvas 用于生成海报 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -27,6 +29,69 @@
     .mono-font{font-family:'JetBrains Mono',monospace}
     /* 模态框背景 */
     .modal-bg{background:rgba(0,0,0,.45);backdrop-filter:blur(4px)}
+
+    /* ===== 海报分享按钮 ===== */
+    .share-poster-btn{@apply inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 transition-all;}
+    /* ===== 海报容器：竖版长图，仅生成时用 ===== */
+    #poster-container{
+      position:absolute;
+      left:-9999px;
+      top:0;
+      width:720px;          /* 竖版：宽 720，高按内容自动延伸 */
+      background:#ffffff;
+      padding:48px 56px;
+      font-family:'Noto Sans SC',sans-serif;
+      color:#111827;
+      line-height:1.6;
+    }
+    #poster-container .poster-title{
+      font-family:'Noto Serif SC',serif;
+      font-weight:700;
+      font-size:40px;
+      background:linear-gradient(135deg,#3b82f6,#8b5cf6);
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      background-clip:text;
+      margin-bottom:32px;
+      text-align:center;
+    }
+    #poster-container .poster-section-title{
+      font-weight:600;
+      font-size:24px;
+      margin-top:36px;
+      margin-bottom:12px;
+      border-left:6px solid #3b82f6;
+      padding-left:12px;
+    }
+    #poster-container .poster-fact{
+      border-left-color:#1e40af;
+    }
+    #poster-container .poster-opinion{
+      border-left-color:#059669;
+    }
+    #poster-container .poster-bias{
+      border-left-color:#dc2626;
+    }
+    #poster-container .poster-list{
+      font-size:20px;
+      font-weight:400;
+      margin-left:18px;
+      margin-bottom:8px;
+    }
+    #poster-container .poster-summary{
+      font-size:22px;
+      font-weight:500;
+      margin-top:40px;
+      padding:24px;
+      background:#f8fafc;
+      border-radius:12px;
+    }
+    #poster-container .poster-footer{
+      margin-top:48px;
+      text-align:center;
+      font-size:18px;
+      color:#6b7280;
+    }
   </style>
 </head>
 <body class="text-gray-900">
@@ -70,7 +135,14 @@
     </div>
 
     <!-- SUMMARY -->
-    <div id="summary-banner" class="analysis-card rounded-2xl p-6 mb-6 hidden"><div class="flex items-center"><i class="fas fa-quote-left text-blue-500 mr-3"></i><span class="text-gray-700 font-medium">报告总结论：</span></div><p id="total-conclusion" class="text-gray-900 text-lg mt-2 leading-relaxed">正在生成结论…</p></div>
+    <div id="summary-banner" class="analysis-card rounded-2xl p-6 mb-6 hidden">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center"><i class="fas fa-quote-left text-blue-500 mr-3"></i><span class="text-gray-700 font-medium">报告总结论：</span></div>
+        <!-- 新增：海报分享按钮 -->
+        <button id="share-poster-btn" class="share-poster-btn hidden"><i class="fas fa-image mr-2"></i>生成分享海报</button>
+      </div>
+      <p id="total-conclusion" class="text-gray-900 text-lg mt-2 leading-relaxed">正在生成结论…</p>
+    </div>
 
     <!-- 4D CARD -->
     <div id="four-dim-card" class="analysis-card rounded-2xl p-8 mb-8 hidden">
@@ -105,6 +177,25 @@
       </div>
     </div>
   </main>
+
+  <!-- ===== 海报容器（生成时离屏渲染） ===== -->
+  <div id="poster-container">
+    <div class="poster-title">明鉴AI 深度分析报告</div>
+    <div id="poster-summary" class="poster-summary"></div>
+
+    <div class="poster-section-title poster-fact">事实要点</div>
+    <div id="poster-facts" class="poster-list"></div>
+
+    <div class="poster-section-title poster-opinion">观点归纳</div>
+    <div id="poster-opinions" class="poster-list"></div>
+
+    <div class="poster-section-title poster-bias">偏见提示</div>
+    <div id="poster-bias" class="poster-list"></div>
+
+    <div class="poster-footer">
+      生成于 <span id="poster-date"></span> · FactLens 明鉴AI
+    </div>
+  </div>
 
   <!-- 页脚：隐私政策 + 用户协议 -->
   <footer class="bg-gray-50 border-t border-gray-200 mt-16">
@@ -316,7 +407,7 @@ ${content}`;
 
     /* ===== DOM 绑定 ===== */
     document.addEventListener('DOMContentLoaded', () => {
-      const analyzeBtn = $('analyze-btn'), sampleBtn = $('sample-btn'), urlInput = $('url-input'), textInput = $('text-input'), progressSection = $('progress-section'), resultsSection = $('results-section'), fourDimCard = $('four-dim-card'), clearBtn = $('clear-btn'), clearTextBtn = $('clear-text-btn');
+      const analyzeBtn = $('analyze-btn'), sampleBtn = $('sample-btn'), urlInput = $('url-input'), textInput = $('text-input'), progressSection = $('progress-section'), resultsSection = $('results-section'), fourDimCard = $('four-dim-card'), clearBtn = $('clear-btn'), clearTextBtn = $('clear-text-btn'), sharePosterBtn = $('share-poster-btn');
       function toggleBtn() {
         const u = urlInput.value.trim(), t = textInput.value.trim(), has = !!(u || t);
         analyzeBtn.disabled = !has;
@@ -331,6 +422,7 @@ ${content}`;
       urlInput.addEventListener('paste', e => setTimeout(() => urlInput.dispatchEvent(new Event('input')), 0));
       analyzeBtn.addEventListener('click', startAnalysis);
       sampleBtn.addEventListener('click', () => { alert('示例功能已移除，请输入URL或粘贴文本进行真实分析。'); urlInput.focus(); });
+      sharePosterBtn.addEventListener('click', generatePoster);
 
       async function startAnalysis() {
         console.log('[FactLens] 按钮已点击');
@@ -340,6 +432,7 @@ ${content}`;
         resultsSection.classList.add('hidden');
         fourDimCard.classList.add('hidden');
         $('summary-banner').classList.add('hidden');
+        sharePosterBtn.classList.add('hidden');
 
         try {
           let content = '', title = '';
@@ -382,6 +475,7 @@ ${content}`;
           fourDimCard.classList.remove('hidden');
           resultsSection.classList.add('fade-in');
           fourDimCard.classList.add('fade-in');
+          sharePosterBtn.classList.remove('hidden');
         }, 1000);
       }
 
@@ -434,6 +528,14 @@ ${content}`;
         $('badge-level').textContent = lvl + ' 级';
         $('badge-text').textContent = txt;
         drawRadar([ts, fd, eb, cs]);
+
+        // 缓存数据到 poster 容器
+        window.posterData = {
+          conclusion,
+          facts: d.facts,
+          opinions: d.opinions,
+          bias: d.bias
+        };
       }
 
       function drawRadar(data) {
@@ -451,6 +553,46 @@ ${content}`;
           },
           options: { scales: { r: { angleLines: false, suggestedMin: 0, suggestedMax: 10 } }, plugins: { legend: { display: false } } }
         });
+      }
+
+      /* ===== 海报生成函数 ===== */
+      async function generatePoster(){
+        if (!window.posterData) return;
+        const d = window.posterData;
+        // 填充离屏容器
+        $('poster-summary').textContent = d.conclusion;
+        $('poster-facts').innerHTML = d.facts.map((f,i)=>`<div>${i+1}. ${f}</div>`).join('');
+        $('poster-opinions').innerHTML = d.opinions.map((o,i)=>`<div>${i+1}. ${o}</div>`).join('');
+        $('poster-bias').innerHTML = `
+          <div>情绪化词汇：${d.bias.emotionalWords} 处</div>
+          <div>二元对立：${d.bias.binaryOpposition} 组</div>
+          <div>动机揣测：${d.bias.motivationGuessing} 处</div>
+          <div>整体倾向：${d.bias.overallTendency}</div>
+        `;
+        $('poster-date').textContent = new Date().toLocaleString('zh-CN');
+
+        const poster = $('poster-container');
+        try {
+          // 使用 html2canvas 渲染
+          const canvas = await html2canvas(poster, {
+            width: 720,
+            scale: 2, // 2 倍清晰度
+            backgroundColor: '#ffffff',
+            useCORS: true
+          });
+          // 下载
+          canvas.toBlob(blob=>{
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `FactLens_明鉴报告_${Date.now()}.png`;
+            a.click();
+            URL.revokeObjectURL(url);
+          }, 'image/png');
+        } catch (err) {
+          console.error('[FactLens] 海报生成失败', err);
+          alert('海报生成失败，请重试');
+        }
       }
     });
   </script>
