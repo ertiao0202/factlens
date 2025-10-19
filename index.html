@@ -20,6 +20,7 @@
     .url-input:focus{border-color:var(--accent-color);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
     .analyze-btn{@apply w-full lg:w-auto px-12 py-4 text-white font-semibold rounded-lg flex items-center justify-center space-x-2 text-lg; background:linear-gradient(135deg,var(--accent-color),#8b5cf6);transition:all .3s ease}
     .analyze-btn:hover{transform:translateY(-2px);box-shadow:0 10px 25px rgba(59,130,246,.3)}
+    .analyze-btn:disabled{opacity:.6;cursor:not-allowed}
     .loading-spinner{animation:spin 1s linear infinite}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
     .fade-in{animation:fadeIn .5s ease-in}@keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
     .section-fact{border-left:4px solid var(--fact-color)}.section-opinion{border-left:4px solid var(--opinion-color)}.section-bias{border-left:4px solid var(--bias-color)}
@@ -265,7 +266,7 @@ ${content}`;
         const url = urlInput.value.trim(), text = textInput.value.trim();
         if (!url && !text) return;
 
-        // ===== ① 加载态：防连点 + 文案变更 =====
+        // ===== 加载态：防连点 + 文案变更 =====
         analyzeBtn.disabled = true;
         analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>分析中…</span>';
 
@@ -299,7 +300,6 @@ ${content}`;
         } catch (err) {
           $('progress-text').textContent = '分析失败';
           $('progress-bar').style.width = '100%';
-          // ===== ② 大白话提示 + 滚动到输入框 =====
           $('total-conclusion').textContent =
             err.message === 'NO_VALID_BODY'
               ? '该网站暂时无法自动抓取，请复制正文到下方文本框再试一次'
@@ -311,16 +311,11 @@ ${content}`;
             progressSection.classList.add('hidden');
             textInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }, 1500);
-          return;
+        } finally {
+          // ===== 无论成功/失败/异常，都恢复按钮 =====
+          analyzeBtn.disabled = false;
+          analyzeBtn.innerHTML = '<i class="fas fa-search"></i><span>明鉴一下</span>';
         }
-
-        setTimeout(() => {
-          progressSection.classList.add('hidden');
-          resultsSection.classList.remove('hidden');
-          fourDimCard.classList.remove('hidden');
-          resultsSection.classList.add('fade-in');
-          fourDimCard.classList.add('fade-in');
-        }, 1000);
       }
 
       function displayResults(d) {
@@ -372,10 +367,6 @@ ${content}`;
         $('badge-level').textContent = lvl + ' 级';
         $('badge-text').textContent = txt;
         drawRadar([ts, fd, eb, cs]);
-
-        // ===== ③ 恢复按钮 =====
-        analyzeBtn.disabled = false;
-        analyzeBtn.innerHTML = '<i class="fas fa-search"></i><span>明鉴一下</span>';
       }
 
       function drawRadar(data) {
