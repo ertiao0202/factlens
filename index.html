@@ -9,6 +9,8 @@
   <script src="https://cdn.tailwindcss.com/3.4.0"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+  <!-- 一键转图片 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -103,6 +105,41 @@
         <div class="analysis-card rounded-2xl p-6"><h3 class="text-lg font-semibold text-gray-900 mb-4"><i class="fas fa-edit text-purple-500 mr-2"></i>对内容发布者的建议</h3><p id="publisher-recommendation" class="text-gray-700 leading-relaxed">正在生成专业建议...</p></div>
         <div class="analysis-card rounded-2xl p-6"><h3 class="text-lg font-semibold text-gray-900 mb-4"><i class="fas fa-comments text-green-500 mr-2"></i>公关回应建议</h3><p id="pr-recommendation" class="text-gray-700 leading-relaxed">正在生成公关建议...</p></div>
       </div>
+
+      <!-- ===== 分享卡片 ===== -->
+      <div id="shareCard" class="hidden w-[400px] bg-white rounded-2xl shadow-lg p-6 text-gray-900">
+        <!-- 头部 -->
+        <div class="flex items-center mb-4">
+          <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+            <i class="fas fa-search text-white"></i>
+          </div>
+          <div class="ml-3">
+            <div class="font-bold">FactLens 明鉴AI</div>
+            <div class="text-xs text-gray-500">三分钟拆「事实/观点/偏见」</div>
+          </div>
+        </div>
+
+        <!-- 结论 -->
+        <p id="cardConclusion" class="text-sm leading-relaxed mb-4">正在生成结论...</p>
+
+        <!-- 四维条形图 -->
+        <div class="space-y-2 text-xs">
+          <div class="flex justify-between"><span>信源透明度</span><span id="cardTs">0</span></div>
+          <div class="w-full bg-gray-200 rounded-full h-2"><div id="cardTsBar" class="bg-blue-600 h-2 rounded-full" style="width:0%"></div></div>
+          <div class="flex justify-between"><span>事实密度</span><span id="cardFd">0</span></div>
+          <div class="w-full bg-gray-200 rounded-full h-2"><div id="cardFdBar" class="bg-green-600 h-2 rounded-full" style="width:0%"></div></div>
+          <div class="flex justify-between"><span>情绪中立度</span><span id="cardEb">0</span></div>
+          <div class="w-full bg-gray-200 rounded-full h-2"><div id="cardEbBar" class="bg-orange-500 h-2 rounded-full" style="width:0%"></div></div>
+          <div class="flex justify-between"><span>一致性</span><span id="cardCs">0</span></div>
+          <div class="w-full bg-gray-200 rounded-full h-2"><div id="cardCsBar" class="bg-purple-600 h-2 rounded-full" style="width:0%"></div></div>
+        </div>
+
+        <!-- 底部 -->
+        <div class="mt-4 text-xs text-gray-400">扫码体验 →</div>
+      </div>
+
+      <!-- 下载按钮 -->
+      <button id="downloadBtn" class="hidden mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">下载分享图</button>
     </div>
   </main>
 
@@ -433,6 +470,33 @@ ${content}`;
         if (avg >= 8.5) { lvl = 'A'; txt = '高可信度'; } else if (avg >= 7) { lvl = 'B'; txt = '中等可信度'; } else if (avg >= 5) { lvl = 'C'; txt = '偏低可信度'; }
         $('badge-level').textContent = lvl + ' 级';
         $('badge-text').textContent = txt;
+
+        // ===== 1. 把数据填进卡片 =====
+        $('cardConclusion').textContent = $('total-conclusion').textContent;
+        $('cardTs').textContent = $('ts-score').textContent;
+        $('cardFd').textContent = $('fd-score').textContent;
+        $('cardEb').textContent = $('eb-score').textContent;
+        $('cardCs').textContent = $('cs-score').textContent;
+        $('cardTsBar').style.width = (ts * 10) + '%';
+        $('cardFdBar').style.width = (fd * 10) + '%';
+        $('cardEbBar').style.width = (eb * 10) + '%';
+        $('cardCsBar').style.width = (cs * 10) + '%';
+
+        // ===== 2. 显示卡片和按钮 =====
+        $('shareCard').classList.remove('hidden');
+        $('downloadBtn').classList.remove('hidden');
+
+        // ===== 3. 点击按钮下载 =====
+        $('downloadBtn').onclick = function () {
+          html2canvas($('shareCard')).then(canvas => {
+            const link = document.createElement('a');
+            link.download = '明鉴AI报告_' + new Date().getTime() + '.png';
+            link.href = canvas.toDataURL();
+            link.click();
+            alert('图片已下载，快去发朋友圈/群聊吧！');
+          });
+        };
+
         drawRadar([ts, fd, eb, cs]);
       }
 
