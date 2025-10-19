@@ -130,10 +130,9 @@
           const res = await fetch(mirrors[i](url), { signal: AbortSignal.timeout(8000) });
           if (!res.ok) continue;
           const text = await res.text();
-          // 新增：软拦截关键词
           if (/(请完成验证|Sina Visitor System|百度安全验证|需验证|请开启 JavaScript|访客验证|无法访问|403 Forbidden|404 Not Found|Access Denied|Please enable cookies|完成验证后方可继续访问)/i.test(text)) {
             console.warn('[FactLens] 遇到验证页，尝试下一镜像');
-            continue; // 直接换镜像重试
+            continue;
           }
           return text;
         } catch (e) {
@@ -145,7 +144,7 @@
 
     /* ===== 增强校验：长度+关键词 ===== */
     function isValidBody(text) {
-      if (!text || text.length < 60) return false; // 长度提高到 60
+      if (!text || text.length < 60) return false;
       const invalid = /(请完成验证|百度安全验证|Sina Visitor System|请开启 JavaScript|访客验证|无法访问|403 Forbidden|404 Not Found|Access Denied|Please enable cookies|完成验证后方可继续访问)/i;
       return !invalid.test(text);
     }
@@ -262,9 +261,14 @@ ${content}`;
       sampleBtn.addEventListener('click', () => { alert('示例功能已移除，请输入URL或粘贴文本进行真实分析。'); urlInput.focus(); });
 
       async function startAnalysis() {
-        console.log('[FactLens] 按钮已点击'); // ← 调试用，确认事件已进
+        console.log('[FactLens] 按钮已点击');
         const url = urlInput.value.trim(), text = textInput.value.trim();
         if (!url && !text) return;
+
+        // ===== ① 加载态：防连点 + 文案变更 =====
+        analyzeBtn.disabled = true;
+        analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>分析中…</span>';
+
         progressSection.classList.remove('hidden');
         resultsSection.classList.add('hidden');
         fourDimCard.classList.add('hidden');
@@ -295,14 +299,18 @@ ${content}`;
         } catch (err) {
           $('progress-text').textContent = '分析失败';
           $('progress-bar').style.width = '100%';
+          // ===== ② 大白话提示 + 滚动到输入框 =====
           $('total-conclusion').textContent =
             err.message === 'NO_VALID_BODY'
-              ? '因网站设置原因，明鉴AI无法访问原始内容，请复制粘贴文本内容直接进行分析。'
-              : '分析过程出现异常，请稍后重试。';
+              ? '该网站暂时无法自动抓取，请复制正文到下方文本框再试一次'
+              : '分析过程出现异常，请稍后重试';
           $('summary-banner').classList.remove('hidden');
           resultsSection.classList.add('hidden');
           fourDimCard.classList.add('hidden');
-          setTimeout(() => progressSection.classList.add('hidden'), 1500);
+          setTimeout(() => {
+            progressSection.classList.add('hidden');
+            textInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 1500);
           return;
         }
 
@@ -364,10 +372,14 @@ ${content}`;
         $('badge-level').textContent = lvl + ' 级';
         $('badge-text').textContent = txt;
         drawRadar([ts, fd, eb, cs]);
+
+        // ===== ③ 恢复按钮 =====
+        analyzeBtn.disabled = false;
+        analyzeBtn.innerHTML = '<i class="fas fa-search"></i><span>明鉴一下</span>';
       }
 
       function drawRadar(data) {
-        if (!window.Chart) {                                // 保护：Chart 加载失败就跳过
+        if (!window.Chart) {
           console.warn('[FactLens] Chart.js 未加载，雷达图跳过');
           return;
         }
