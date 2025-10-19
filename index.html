@@ -4,9 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FactLens 明鉴AI - 四维分析</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- === 国内可访问、带版本号的 CDN === -->
+  <script src="https://cdn.tailwindcss.com/3.4.0"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root{--primary-color:#1a1d29;--secondary-color:#6b7280;--accent-color:#3b82f6;--fact-color:#1e40af;--opinion-color:#059669;--bias-color:#dc2626;--bg-color:#ffffff;--text-color:#111827}
@@ -110,8 +113,12 @@
   </footer>
 
   <script>
+    /* ===== 保护：Chart 加载失败也不阻断后续 ===== */
+    window.Chart = window.Chart || false;
+
     /* ===== 通用工具 ===== */
     const $ = id => document.getElementById(id);
+
     async function fetchText(url, maxTry = 2) {
       const mirrors = [
         u => `https://r.jina.ai/${encodeURIComponent(u)}?chunk_num=1&chunk_order=0&html=false`,
@@ -183,4 +190,187 @@ ${content}`;
     async function analyzeWithKimi(content, title) {
       const prompt = buildPrompt(content, title);
       const body = { model: 'moonshot-v1-8k', messages: [{ role: 'user', content: prompt }], temperature: 0.25, max_tokens: 2048 };
-      const res = await
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) { const t = await res.text(); throw new Error(`Moonshot API ${res.status}: ${t}`); }
+      return (await res.json()).choices[0].message.content;
+    }
+    function parseKimiResponse(md) {
+      const r = { title: '', credibility: 0, reason: '', facts: [], opinions: [], bias: { emotionalWords: 0, binaryOpposition: 0, motivationGuessing: 0, logicalFallacy: 0, overallTendency: '中性 0%' }, summaryForBanner: '', publisherRecommendation: '', recommendation: '' };
+      const mCred = md.match(/可信度[:：]\s*(\d+(?:\.\d+)?)\s*\/\s*10\s*（(.+?)）/);
+      if (mCred) { r.credibility = parseFloat(mCred[1]); r.reason = mCred[2]; }
+      const mTitle = md.match(/标题[:：]\s*(.+?)(?:\n|\||$)/);
+      if (mTitle) r.title = mTitle[1].trim();
+      const fBlock = md.match(/#### 事实区[\s\S]*?(?=#### 观点区)/);
+      if (fBlock) r.facts = fBlock[0].split('\n').filter(l => /^\d+\./.test(l)).map(l => l.replace(/^\d+\.\s*<fact>(.*)<\/fact>.*/, '$1').trim()).filter(Boolean);
+      const oBlock = md.match(/#### 观点区[\s\S]*?(?=#### 偏见指标)/);
+      if (oBlock) r.opinions = oBlock[0].split('\n').filter(l => /^\d+\./.test(l)).map(l => l.replace(/^\d+\.\s*<opinion>(.*)<\/opinion>.*/, '$1').trim()).filter(Boolean);
+      const bBlock = md.match(/#### 偏见指标[\s\S]*?(?=#### 对内容发布者的建议)/);
+      if (bBlock) {
+        const b = bBlock[0];
+        const emo = b.match(/情绪化词汇[:：]\s*(\d+)\s*处/);
+        const bin = b.match(/二元对立[:：]\s*(\d+)\s*组/);
+        const mot = b.match(/动机揣测[:：]\s*(\d+)\s*处/);
+        const fall = b.match(/逻辑谬误[:：]\s*(\d+)\s*处/);
+        const tend = b.match(/整体倾向[:：]\s*([\u4e00-\u9fa5]+\s*\d+%|\d+%\s*[\u4e00-\u9fa5]+)/);
+        if (emo) r.bias.emotionalWords = parseInt(emo[1]);
+        if (bin) r.bias.binaryOpposition = parseInt(bin[1]);
+        if (mot) r.bias.motivationGuessing = parseInt(mot[1]);
+        if (fall) r.bias.logicalFallacy = parseInt(fall[1]);
+        if (tend) r.bias.overallTendency = tend[1].trim();
+      }
+      const pub = md.match(/#### 对内容发布者的建议[\s\S]*?\n【行动】\s*(.+?)\s*(?=####|$)/s);
+      if (pub) r.publisherRecommendation = pub[1].replace(/\s+/g,' ').trim();
+      const pr  = md.match(/#### 公关回应建议[\s\S]*?\n【回应要点】\s*(.+?)\s*(?=####|$)/s);
+      if (pr) r.recommendation = pr[1].replace(/\s+/g,' ').trim();
+      const banner = md.match(/#### 报告总结论（≤80 字）\s*\n([\s\S]*?)(?=###|\|$$|\n*$|$)/);
+      if (banner) r.summaryForBanner = banner[1].replace(/\s+/g,' ').trim();
+      return r;
+    }
+
+    /* ===== DOM 绑定 ===== */
+    document.addEventListener('DOMContentLoaded', () => {
+      const analyzeBtn = $('analyze-btn'), sampleBtn = $('sample-btn'), urlInput = $('url-input'), textInput = $('text-input'), progressSection = $('progress-section'), resultsSection = $('results-section'), fourDimCard = $('four-dim-card'), clearBtn = $('clear-btn'), clearTextBtn = $('clear-text-btn');
+      function toggleBtn() {
+        const u = urlInput.value.trim(), t = textInput.value.trim(), has = !!(u || t);
+        analyzeBtn.disabled = !has;
+        analyzeBtn.classList.toggle('opacity-50', !has);
+        clearBtn.classList.toggle('hidden', !u);
+        clearTextBtn.classList.toggle('hidden', !t);
+      }
+      urlInput.addEventListener('input', () => { if (urlInput.value) textInput.value = ''; toggleBtn(); });
+      textInput.addEventListener('input', () => { if (textInput.value) urlInput.value = ''; toggleBtn(); });
+      clearBtn.addEventListener('click', () => { urlInput.value = ''; toggleBtn(); urlInput.focus(); });
+      clearTextBtn.addEventListener('click', () => { textInput.value = ''; toggleBtn(); textInput.focus(); });
+      urlInput.addEventListener('paste', e => setTimeout(() => urlInput.dispatchEvent(new Event('input')), 0));
+      analyzeBtn.addEventListener('click', startAnalysis);
+      sampleBtn.addEventListener('click', () => { alert('示例功能已移除，请输入URL或粘贴文本进行真实分析。'); urlInput.focus(); });
+
+      async function startAnalysis() {
+        console.log('[FactLens] 按钮已点击'); // ← 调试用，确认事件已进
+        const url = urlInput.value.trim(), text = textInput.value.trim();
+        if (!url && !text) return;
+        progressSection.classList.remove('hidden');
+        resultsSection.classList.add('hidden');
+        fourDimCard.classList.add('hidden');
+        $('summary-banner').classList.add('hidden');
+
+        try {
+          let content = '', title = '';
+          if (url) {
+            $('progress-text').textContent = '正在获取网页内容...';
+            $('progress-bar').style.width = '20%';
+            content = await fetchText(url);
+            if (!isValidBody(content)) throw new Error('NO_VALID_BODY');
+            const MAX_INPUT = 3500;
+            if (content.length > MAX_INPUT) content = content.slice(0, MAX_INPUT) + '……';
+            title = url;
+          } else {
+            $('progress-text').textContent = '正在处理文本内容...';
+            $('progress-bar').style.width = '20%';
+            content = text.slice(0, 3500);
+            title = '直接粘贴的文本内容';
+          }
+          $('progress-text').textContent = 'AI深度分析中...';
+          $('progress-bar').style.width = '60%';
+          const kimiMd = await analyzeWithKimi(content, title);
+          $('progress-text').textContent = '生成可信度报告...';
+          $('progress-bar').style.width = '100%';
+          displayResults(parseKimiResponse(kimiMd));
+        } catch (err) {
+          $('progress-text').textContent = '分析失败';
+          $('progress-bar').style.width = '100%';
+          $('total-conclusion').textContent =
+            err.message === 'NO_VALID_BODY'
+              ? '因网站设置原因，明鉴AI无法访问原始内容，请复制粘贴文本内容直接进行分析。'
+              : '分析过程出现异常，请稍后重试。';
+          $('summary-banner').classList.remove('hidden');
+          resultsSection.classList.add('hidden');
+          fourDimCard.classList.add('hidden');
+          setTimeout(() => progressSection.classList.add('hidden'), 1500);
+          return;
+        }
+
+        setTimeout(() => {
+          progressSection.classList.add('hidden');
+          resultsSection.classList.remove('hidden');
+          fourDimCard.classList.remove('hidden');
+          resultsSection.classList.add('fade-in');
+          fourDimCard.classList.add('fade-in');
+        }, 1000);
+      }
+
+      function displayResults(d) {
+        const ts = Math.min(10, 0.5 + (d.credibility || 8.5));
+        const ebRaw = d.bias.emotionalWords + d.bias.binaryOpposition + d.bias.motivationGuessing;
+        const eb = Math.max(0, 10 - ebRaw * 1.2);
+        let biasTxt = '';
+        if (ebRaw === 0)       biasTxt = '基本中立';
+        else if (ebRaw <= 2)   biasTxt = '略有倾向';
+        else if (ebRaw <= 4)   biasTxt = '存在明显偏见';
+        else                   biasTxt = '存在严重偏见';
+        const stance = eb >= 8 ? '客观中立' : eb >= 6 ? '有失偏颇' : '不够客观';
+        const conclusion = d.summaryForBanner
+          ? `${d.summaryForBanner} 这是一篇${stance}的报道，${biasTxt}。`
+          : `这是一篇${stance}的报道，${biasTxt}。`;
+        $('total-conclusion').textContent = conclusion;
+        $('summary-banner').classList.remove('hidden');
+
+        const factsList = $('facts-list');
+        factsList.innerHTML = d.facts.length ? d.facts.map((f, i) => `<div class="text-sm text-gray-700 bg-blue-50 p-3 rounded-lg">${i + 1}. ${f}</div>`).join('') : '<div class="text-sm text-gray-500">未检测到明确的事实陈述</div>';
+        const opList = $('opinions-list');
+        opList.innerHTML = d.opinions.length ? d.opinions.map((o, i) => `<div class="text-sm text-gray-700 bg-green-50 p-3 rounded-lg">${i + 1}. ${o}</div>`).join('') : '<div class="text-sm text-gray-500">未检测到明确的观点表达</div>';
+        $('emotional-words').textContent = d.bias.emotionalWords + ' 处';
+        $('binary-opposition').textContent = d.bias.binaryOpposition + ' 组';
+        $('motivation-guessing').textContent = d.bias.motivationGuessing + ' 处';
+        $('overall-tendency').textContent = d.bias.overallTendency || '中性 0%';
+        $('publisher-recommendation').textContent = d.publisherRecommendation || '建议提升内容质量';
+        $('pr-recommendation').textContent = d.recommendation || '建议谨慎处理';
+
+        const fd = Math.min(10, 1.5 + (d.facts.length || 0) * 1.8);
+        const cs = Math.min(10, 0.5 + (ts + fd + eb) / 3);
+        $('eb-score').textContent = eb.toFixed(1);
+        $('ts-score').textContent = ts.toFixed(1);
+        $('fd-score').textContent = fd.toFixed(1);
+        $('cs-score').textContent = cs.toFixed(1);
+
+        const ebPercent = eb * 10;
+        const hue        = 34 - (ebPercent * 0.34);
+        const lightness  = 55 - (ebPercent * 0.15);
+        const barColor   = `hsl(${hue}, 90%, ${lightness}%)`;
+        $('eb-bar').style.cssText = `width:${ebPercent.toFixed(0)}%;background:${barColor}`;
+        $('ts-bar').style.cssText = `width:${(ts * 10).toFixed(0)}%;background-color:#2563eb`;
+        $('fd-bar').style.cssText = `width:${(fd * 10).toFixed(0)}%;background-color:#16a34a`;
+        $('cs-bar').style.cssText = `width:${(cs * 10).toFixed(0)}%;background-color:#9333ea`;
+
+        const avg = (ts + fd + eb + cs) / 4;
+        let lvl = 'D', txt = '低可信度';
+        if (avg >= 8.5) { lvl = 'A'; txt = '高可信度'; } else if (avg >= 7) { lvl = 'B'; txt = '中等可信度'; } else if (avg >= 5) { lvl = 'C'; txt = '偏低可信度'; }
+        $('badge-level').textContent = lvl + ' 级';
+        $('badge-text').textContent = txt;
+        drawRadar([ts, fd, eb, cs]);
+      }
+
+      function drawRadar(data) {
+        if (!window.Chart) {                                // 保护：Chart 加载失败就跳过
+          console.warn('[FactLens] Chart.js 未加载，雷达图跳过');
+          return;
+        }
+        const ctx = $('radar-canvas');
+        if (window.radarInstance) window.radarInstance.destroy();
+        window.radarInstance = new Chart(ctx, {
+          type: 'radar',
+          data: {
+            labels: ['信源透明度', '事实密度', '情绪中立度', '一致性'],
+            datasets: [{ label: '得分', data: data, backgroundColor: 'rgba(59, 130, 246, 0.2)', borderColor: 'rgba(59, 130, 246, 1)', pointBackgroundColor: 'rgba(59, 130, 246, 1)', pointBorderColor: '#fff', pointHoverBackgroundColor: '#fff', pointHoverBorderColor: 'rgba(59, 130, 246, 1)' }]
+          },
+          options: { scales: { r: { angleLines: false, suggestedMin: 0, suggestedMax: 10 } }, plugins: { legend: { display: false } } }
+        });
+      }
+    });
+  </script>
+</body>
+</html>
