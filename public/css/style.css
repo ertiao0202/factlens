@@ -1,0 +1,12 @@
+:root{--primary-color:#1a1d29;--secondary-color:#6b7280;--accent-color:#3b82f6;--fact-color:#1e40af;--opinion-color:#059669;--bias-color:#dc2626;--bg-color:#ffffff;--text-color:#111827}
+body{font-family:'Noto Sans SC',sans-serif;background:linear-gradient(135deg,#f8fafc 0%,#e2e8f0 100%);min-height:100vh}
+.hero-title{font-family:'Noto Serif SC',serif;font-weight:700;background:linear-gradient(135deg,var(--accent-color),#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.analysis-card{background:rgba(255,255,255,.95);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.2);box-shadow:0 8px 32px rgba(0,0,0,.1)}
+.url-input{@apply w-full px-4 py-3 pr-12 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none;border:2px solid #e5e7eb;transition:all .3s ease}
+.url-input:focus{border-color:var(--accent-color);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+.analyze-btn{@apply w-full lg:w-auto px-12 py-4 text-white font-semibold rounded-lg flex items-center justify-center space-x-2 text-lg; background:linear-gradient(135deg,var(--accent-color),#8b5cf6);transition:all .3s ease}
+.analyze-btn:hover{transform:translateY(-2px);box-shadow:0 10px 25px rgba(59,130,246,.3)}
+.loading-spinner{animation:spin 1s linear infinite}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.fade-in{animation:fadeIn .5s ease-in}@keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.section-fact{border-left:4px solid var(--fact-color)}.section-opinion{border-left:4px solid var(--opinion-color)}.section-bias{border-left:4px solid var(--bias-color)}
+.mono-font{font-family:'JetBrains Mono',monospace}
