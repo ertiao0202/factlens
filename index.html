@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-UTF-8">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FactLens 明鉴AI - 四维分析</title>
 
@@ -32,65 +32,106 @@
 
     /* ===== 海报分享按钮 ===== */
     .share-poster-btn{@apply inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 transition-all;}
-    /* ===== 海报容器：竖版长图，仅生成时用 ===== */
+    /* ===== 海报容器：横屏友好 840px，更透气 ===== */
     #poster-container{
       position:absolute;
       left:-9999px;
       top:0;
-      width:720px;          /* 竖版：宽 720，高按内容自动延伸 */
+      width:840px;          /* 加宽到 840px */
       background:#ffffff;
-      padding:48px 56px;
+      padding:64px 72px;    /* 整体边距放大 */
       font-family:'Noto Sans SC',sans-serif;
       color:#111827;
-      line-height:1.6;
+      line-height:1.8;      /* 行距更宽松 */
+      border-radius:24px;   /* 圆角更大 */
     }
     #poster-container .poster-title{
       font-family:'Noto Serif SC',serif;
       font-weight:700;
-      font-size:40px;
+      font-size:48px;       /* 字号再放大 */
       background:linear-gradient(135deg,#3b82f6,#8b5cf6);
       -webkit-background-clip:text;
       -webkit-text-fill-color:transparent;
       background-clip:text;
-      margin-bottom:32px;
+      margin-bottom:40px;
       text-align:center;
     }
     #poster-container .poster-section-title{
       font-weight:600;
+      font-size:28px;       /* 放大 */
+      margin-top:48px;
+      margin-bottom:16px;
+      border-left:8px solid #3b82f6; /* 更粗 */
+      padding-left:16px;
+      display:flex;
+      align-items:center;
+    }
+    #poster-container .poster-section-title i{
+      margin-right:12px;
       font-size:24px;
-      margin-top:36px;
-      margin-bottom:12px;
-      border-left:6px solid #3b82f6;
-      padding-left:12px;
     }
-    #poster-container .poster-fact{
-      border-left-color:#1e40af;
-    }
-    #poster-container .poster-opinion{
-      border-left-color:#059669;
-    }
-    #poster-container .poster-bias{
-      border-left-color:#dc2626;
-    }
+    #poster-container .poster-fact{border-left-color:#1e40af;}
+    #poster-container .poster-opinion{border-left-color:#059669;}
+    #poster-container .poster-bias{border-left-color:#dc2626;}
     #poster-container .poster-list{
-      font-size:20px;
+      font-size:22px;       /* 字号放大 */
       font-weight:400;
-      margin-left:18px;
-      margin-bottom:8px;
+      margin-left:24px;
+      margin-bottom:10px;
     }
     #poster-container .poster-summary{
-      font-size:22px;
+      font-size:24px;       /* 放大 */
       font-weight:500;
-      margin-top:40px;
-      padding:24px;
-      background:#f8fafc;
-      border-radius:12px;
-    }
-    #poster-container .poster-footer{
       margin-top:48px;
+      padding:28px;
+      background:#f8fafc;
+      border-radius:16px;
+    }
+    /* 分隔线 + 图标 */
+    #poster-container .divider{
+      margin:36px 0;
+      border-top:1px solid #e5e7eb;
+      position:relative;
+    }
+    #poster-container .divider i{
+      position:absolute;
+      left:50%;
+      top:-12px;
+      transform:translateX(-50%);
+      background:#fff;
+      padding:0 12px;
+      color:#9ca3af;
+      font-size:20px;
+    }
+    /* 迷你雷达图容器 */
+    #poster-container .mini-radar-box{
+      margin-top:40px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-direction:column;
+    }
+    #poster-container .mini-radar-box canvas{
+      width:300px!important;
+      height:300px!important;
+    }
+    /* 底部短行 + 二维码占位 */
+    #poster-container .poster-footer{
+      margin-top:56px;
       text-align:center;
       font-size:18px;
       color:#6b7280;
+    }
+    #poster-container .qr-placeholder{
+      display:inline-block;
+      width:80px;
+      height:80px;
+      background:#f3f4f6;
+      border:1px dashed #d1d5db;
+      border-radius:12px;
+      margin-top:12px;
+      line-height:80px;
+      color:#9ca3af;
     }
   </style>
 </head>
@@ -138,8 +179,6 @@
     <div id="summary-banner" class="analysis-card rounded-2xl p-6 mb-6 hidden">
       <div class="flex items-center justify-between">
         <div class="flex items-center"><i class="fas fa-quote-left text-blue-500 mr-3"></i><span class="text-gray-700 font-medium">报告总结论：</span></div>
-        <!-- 新增：海报分享按钮 -->
-        <button id="share-poster-btn" class="share-poster-btn hidden"><i class="fas fa-image mr-2"></i>生成分享海报</button>
       </div>
       <p id="total-conclusion" class="text-gray-900 text-lg mt-2 leading-relaxed">正在生成结论…</p>
     </div>
@@ -176,6 +215,11 @@
         <div class="analysis-card rounded-2xl p-6"><h3 class="text-lg font-semibold text-gray-900 mb-4"><i class="fas fa-comments text-green-500 mr-2"></i>公关回应建议</h3><p id="pr-recommendation" class="text-gray-700 leading-relaxed">正在生成公关建议...</p></div>
       </div>
     </div>
+
+    <!-- 页面最底部：分享海报按钮 -->
+    <div id="bottom-share" class="hidden mt-12 text-center">
+      <button id="share-poster-btn" class="share-poster-btn"><i class="fas fa-image mr-2"></i>下载分享海报</button>
+    </div>
   </main>
 
   <!-- ===== 海报容器（生成时离屏渲染） ===== -->
@@ -183,17 +227,33 @@
     <div class="poster-title">明鉴AI 深度分析报告</div>
     <div id="poster-summary" class="poster-summary"></div>
 
-    <div class="poster-section-title poster-fact">事实要点</div>
+    <div class="divider"><i class="fas fa-heart"></i></div>
+
+    <div class="poster-section-title poster-fact"><i class="fas fa-check-circle"></i>事实要点</div>
     <div id="poster-facts" class="poster-list"></div>
 
-    <div class="poster-section-title poster-opinion">观点归纳</div>
+    <div class="divider"><i class="fas fa-lightbulb"></i></div>
+
+    <div class="poster-section-title poster-opinion"><i class="fas fa-comment-dots"></i>观点归纳</div>
     <div id="poster-opinions" class="poster-list"></div>
 
-    <div class="poster-section-title poster-bias">偏见提示</div>
+    <div class="divider"><i class="fas fa-exclamation-triangle"></i></div>
+
+    <div class="poster-section-title poster-bias"><i class="fas fa-flag"></i>偏见提示</div>
     <div id="poster-bias" class="poster-list"></div>
 
+    <!-- 迷你雷达图 -->
+    <div class="mini-radar-box">
+      <canvas id="poster-radar" width="300" height="300"></canvas>
+    </div>
+
+    <div class="divider"><i class="fas fa-link"></i></div>
+
+    <!-- 底部短行 + 二维码占位 -->
     <div class="poster-footer">
-      生成于 <span id="poster-date"></span> · FactLens 明鉴AI
+      <div>短链接：factlens.cn/abc123</div>
+      <div class="qr-placeholder">二维码</div>
+      <div id="poster-date"></div>
     </div>
   </div>
 
@@ -407,7 +467,7 @@ ${content}`;
 
     /* ===== DOM 绑定 ===== */
     document.addEventListener('DOMContentLoaded', () => {
-      const analyzeBtn = $('analyze-btn'), sampleBtn = $('sample-btn'), urlInput = $('url-input'), textInput = $('text-input'), progressSection = $('progress-section'), resultsSection = $('results-section'), fourDimCard = $('four-dim-card'), clearBtn = $('clear-btn'), clearTextBtn = $('clear-text-btn'), sharePosterBtn = $('share-poster-btn');
+      const analyzeBtn = $('analyze-btn'), sampleBtn = $('sample-btn'), urlInput = $('url-input'), textInput = $('text-input'), progressSection = $('progress-section'), resultsSection = $('results-section'), fourDimCard = $('four-dim-card'), clearBtn = $('clear-btn'), clearTextBtn = $('clear-text-btn'), sharePosterBtn = $('share-poster-btn'), bottomShare = $('bottom-share');
       function toggleBtn() {
         const u = urlInput.value.trim(), t = textInput.value.trim(), has = !!(u || t);
         analyzeBtn.disabled = !has;
@@ -432,7 +492,7 @@ ${content}`;
         resultsSection.classList.add('hidden');
         fourDimCard.classList.add('hidden');
         $('summary-banner').classList.add('hidden');
-        sharePosterBtn.classList.add('hidden');
+        bottomShare.classList.add('hidden');
 
         try {
           let content = '', title = '';
@@ -475,7 +535,7 @@ ${content}`;
           fourDimCard.classList.remove('hidden');
           resultsSection.classList.add('fade-in');
           fourDimCard.classList.add('fade-in');
-          sharePosterBtn.classList.remove('hidden');
+          bottomShare.classList.remove('hidden');
         }, 1000);
       }
 
@@ -534,7 +594,8 @@ ${content}`;
           conclusion,
           facts: d.facts,
           opinions: d.opinions,
-          bias: d.bias
+          bias: d.bias,
+          scores: [ts, fd, eb, cs]
         };
       }
 
@@ -571,11 +632,14 @@ ${content}`;
         `;
         $('poster-date').textContent = new Date().toLocaleString('zh-CN');
 
+        // 绘制迷你雷达图
+        await drawMiniRadar(d.scores);
+
         const poster = $('poster-container');
         try {
           // 使用 html2canvas 渲染
           const canvas = await html2canvas(poster, {
-            width: 720,
+            width: 840,
             scale: 2, // 2 倍清晰度
             backgroundColor: '#ffffff',
             useCORS: true
@@ -593,6 +657,52 @@ ${content}`;
           console.error('[FactLens] 海报生成失败', err);
           alert('海报生成失败，请重试');
         }
+      }
+
+      async function drawMiniRadar(scores){
+        if (!window.Chart) return;
+        const ctx = $('poster-radar');
+        // 清理旧图
+        if (window.posterRadarInstance) window.posterRadarInstance.destroy();
+        window.posterRadarInstance = new Chart(ctx, {
+          type: 'radar',
+          data: {
+            labels: ['信源透明度', '事实密度', '情绪中立度', '一致性'],
+            datasets: [{
+              label: '得分',
+              data: scores,
+              backgroundColor: 'rgba(59, 130, 246, 0.15)',
+              borderColor: 'rgba(59, 130, 246, 1)',
+              pointBackgroundColor: '#fff',
+              pointBorderColor: 'rgba(59, 130, 246, 1)',
+              pointRadius: 5,
+              borderWidth: 3
+            }]
+          },
+          options: {
+            responsive: false,
+            scales: {
+              r: {
+                suggestedMin: 0,
+                suggestedMax: 10,
+                ticks: { stepSize: 2, font: { size: 16, family: 'Noto Sans SC' } },
+                grid: { color: '#e5e7eb' },
+                angleLines: { color: '#e5e7eb' },
+                pointLabels: { font: { size: 18, family: 'Noto Sans SC' } }
+              }
+            },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: ctx => `${ctx.label}: ${ctx.parsed.r.toFixed(1)}`
+                },
+                titleFont: { size: 18, family: 'Noto Sans SC' },
+                bodyFont: { size: 16, family: 'Noto Sans SC' }
+              }
+            }
+          }
+        });
       }
     });
   </script>
