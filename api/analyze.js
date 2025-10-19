@@ -1,19 +1,22 @@
-// 服务器端：浏览器拿不到 KEY，也看不到源码
+// 镜像列表：去掉 401 的 s.jina，换成无需鉴权的新节点
+const mirrors = [
+  url => `https://r.jina.ai/${encodeURIComponent(url)}?chunk_num=1&chunk_order=0&html=false`,
+  url => `https://jina.readers.vercel.app/${encodeURIComponent(url)}` // 备用，无鉴权
+];
+
+/* 其余代码完全不变，只加两处硬限 */
 export default async function handler(req, res) {
-  // ------- CORS -------
   res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // ------- 入参校验 -------
   const { content = '', title = '用户输入' } = req.body || {};
-  if (!content || content.length < 10)
-    return res.status(400).json({ error: '文本过短' });
-  if (content.length > 3500)
-    return res.status(413).json({ error: '文本超长（>3500）' });
+  if (!content || content.length < 10) return res.status(400).json({ error: '文本过短' });
 
-  // ------- 拼装 prompt -------
+  // 1. 硬限 3500 字符，避免 413
+  if (content.length > 3500) content = content.slice(0, 3500) + '……';
+
   const prompt = `【角色】你是明鉴AI——专门做「事实-观点-偏见」三色拆解的内容鉴定器。
 【格式规范】
 | 明鉴·FactLens 报告 |
@@ -54,7 +57,6 @@ xxx
 【正文】
 ${content}`;
 
-  // ------- 调 Moonshot -------
   try {
     const moonRes = await fetch('https://api.moonshot.cn/v1/chat/completions', {
       method: 'POST',
