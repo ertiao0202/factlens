@@ -499,6 +499,7 @@ ${content}`;
     analyzeBtn.addEventListener('click', startAnalysis);
 
     async function startAnalysis() {
+      const analyzeBtn = $('analyze-btn');
       const url = urlInput.value.trim(), text = textInput.value.trim();
       if (!url && !text) return;
       progressSection.classList.remove('hidden');
