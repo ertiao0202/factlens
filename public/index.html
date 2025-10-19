@@ -4,15 +4,32 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>FactLens 明鉴AI - 四维分析</title>
-  <!-- 1. 换成本地静态 CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.0/dist/tailwind.min.css" />
+
+  <!-- 1. 官方原版 CDN（像素级一致） -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
- <script src="https://cdn.tailwindcss.com"></script>   <!-- 把你原来的渐变变量样式放这里 -->
+
+  <!-- 2. 自定义变量、动画、渐变（原样保留） -->
+  <style>
+    :root{--primary-color:#1a1d29;--secondary-color:#6b7280;--accent-color:#3b82f6;--fact-color:#1e40af;--opinion-color:#059669;--bias-color:#dc2626;--bg-color:#ffffff;--text-color:#111827}
+    body{font-family:'Noto Sans SC',sans-serif;background:linear-gradient(135deg,#f8fafc 0%,#e2e8f0 100%);min-height:100vh}
+    .hero-title{font-family:'Noto Serif SC',serif;font-weight:700;background:linear-gradient(135deg,var(--accent-color),#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .analysis-card{background:rgba(255,255,255,.95);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.2);box-shadow:0 8px 32px rgba(0,0,0,.1)}
+    .url-input{@apply w-full px-4 py-3 pr-12 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none;border:2px solid #e5e7eb;transition:all .3s ease}
+    .url-input:focus{border-color:var(--accent-color);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+    .analyze-btn{@apply w-full lg:w-auto px-12 py-4 text-white font-semibold rounded-lg flex items-center justify-center space-x-2 text-lg; background:linear-gradient(135deg,var(--accent-color),#8b5cf6);transition:all .3s ease}
+    .analyze-btn:hover{transform:translateY(-2px);box-shadow:0 10px 25px rgba(59,130,246,.3)}
+    .loading-spinner{animation:spin 1s linear infinite}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+    .fade-in{animation:fadeIn .5s ease-in}@keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    .section-fact{border-left:4px solid var(--fact-color)}.section-opinion{border-left:4px solid var(--opinion-color)}.section-bias{border-left:4px solid var(--bias-color)}
+    .mono-font{font-family:'JetBrains Mono',monospace}
+  </style>
 </head>
+
 <body class="text-gray-900">
-  <!-- 以下 HTML 完全保持原样 -->
   <nav class="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-16">
@@ -98,7 +115,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-gray-600"><p class="mb-2">© 2024 FactLens 明鉴AI. 专业内容分析工具</p><p class="text-sm">Powered by AI | Designed for Truth</p></div>
   </footer>
 
-  <!-- 2. 放到 body 末尾，确保 DOM 已生成 -->
+  <!-- JS 放在末尾，确保 DOM 已生成 -->
   <script src="js/main.js"></script>
 </body>
 </html>
