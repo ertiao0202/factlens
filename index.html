@@ -115,7 +115,7 @@
             </p>
         </div>
 
-        <!-- 输入区域 -->
+        <!-- 输入区域（仅插入文本框 & 或分割线，其余不动） -->
         <div class="analysis-card rounded-2xl p-8 mb-8">
             <!-- URL 输入 -->
             <label for="url-input" class="block text-sm font-medium text-gray-700 mb-2">
@@ -147,7 +147,7 @@
                 </div>
             </div>
 
-            <!-- 文本粘贴 -->
+            <!-- 文本粘贴（仅此新增） -->
             <label for="text-input" class="block text-sm font-medium text-gray-700 mb-2">
                 <i class="fas fa-file-alt mr-2 text-green-500"></i>粘贴文本内容进行分析
             </label>
@@ -187,7 +187,7 @@
             </div>
         </div>
 
-        <!-- 结果展示区 -->
+        <!-- 结果展示区（与你上一版完全一致） -->
         <div id="results-section" class="hidden">
             <!-- 可信度评分 -->
             <div class="analysis-card rounded-2xl p-8 mb-8">
@@ -270,17 +270,8 @@
                 </div>
             </div>
 
-            <!-- 建议 & 摘要 -->
-            <div class="grid lg:grid-cols-3 gap-8">
-                <div class="analysis-card rounded-2xl p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">
-                        <i class="fas fa-clipboard-list text-blue-500 mr-2"></i>一句话摘要
-                    </h3>
-                    <p id="summary-text" class="text-gray-700 leading-relaxed">
-                        正在进行AI深度分析...
-                    </p>
-                </div>
-
+            <!-- 建议（无一句话摘要，与你上一版一致） -->
+            <div class="grid lg:grid-cols-2 gap-8">
                 <div class="analysis-card rounded-2xl p-6">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4">
                         <i class="fas fa-edit text-purple-500 mr-2"></i>对内容发布者的建议
@@ -289,7 +280,6 @@
                         正在生成专业建议...
                     </p>
                 </div>
-
                 <div class="analysis-card rounded-2xl p-6">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4">
                         <i class="fas fa-comments text-green-500 mr-2"></i>公关回应建议
@@ -453,8 +443,8 @@
             }
 
             function displayResults(data) {
-                // 直接用「彩条」替代饼图
-                createBarChart(data);
+                // 保留你原来的饼图，不改成彩条
+                createCredibilityChart(data.credibility || 8.5);
                 document.getElementById('report-title').textContent = data.title || '分析文章';
                 document.getElementById('credibility-score').textContent = `${data.credibility || 8.5} / 10`;
                 document.getElementById('credibility-reason').textContent = data.reason || '内容分析完成';
@@ -469,32 +459,24 @@
                 document.getElementById('motivation-guessing').textContent = `${data.bias?.motivationGuessing || 0} 处`;
                 document.getElementById('overall-tendency').textContent = data.bias?.overallTendency || '中性 0%';
 
-                document.getElementById('summary-text').textContent = data.summary || 'AI分析完成';
                 document.getElementById('publisher-recommendation').textContent = data.publisherRecommendation || '建议提升内容质量';
                 document.getElementById('pr-recommendation').textContent = data.recommendation || '建议谨慎处理';
             }
 
-            function createBarChart(data) {
-                const chartDiv = document.getElementById('credibility-chart');
-                chartDiv.innerHTML = ''; // 清空饼图
-                const ts = Math.min(10, 0.5 + (data.credibility || 8.5));
-                const ebRaw = data.bias.emotionalWords + data.bias.binaryOpposition + data.bias.motivationGuessing;
-                const eb = Math.max(0, 10 - ebRaw * 1.2);
-                const fd = Math.min(10, 1.5 + (data.facts.length || 0) * 1.8);
-                const cs = Math.min(10, 0.5 + (ts + fd + eb) / 3);
-
-                chartDiv.innerHTML = `
-                    <div class="space-y-3 text-sm">
-                        <div class="flex justify-between items-center"><span>信源透明度</span><span class="mono-font">${ts.toFixed(1)}</span></div>
-                        <div class="w-full bg-gray-200 rounded-full h-2"><div class="bg-blue-600 h-2 rounded-full" style="width:${ts * 10}%"></div></div>
-                        <div class="flex justify-between items-center"><span>事实密度</span><span class="mono-font">${fd.toFixed(1)}</span></div>
-                        <div class="w-full bg-gray-200 rounded-full h-2"><div class="bg-green-600 h-2 rounded-full" style="width:${fd * 10}%"></div></div>
-                        <div class="flex justify-between items-center"><span>情绪中立度</span><span class="mono-font">${eb.toFixed(1)}</span></div>
-                        <div class="w-full bg-gray-200 rounded-full h-2"><div class="bg-orange-500 h-2 rounded-full" style="width:${eb * 10}%"></div></div>
-                        <div class="flex justify-between items-center"><span>一致性</span><span class="mono-font">${cs.toFixed(1)}</span></div>
-                        <div class="w-full bg-gray-200 rounded-full h-2"><div class="bg-purple-600 h-2 rounded-full" style="width:${cs * 10}%"></div></div>
-                    </div>
-                `;
+            function createCredibilityChart(score) {
+                const data = [{
+                    values: [score, 10 - score],
+                    labels: ['可信度', ''],
+                    type: 'pie',
+                    hole: 0.7,
+                    marker: { colors: ['#3b82f6', '#e5e7eb'] },
+                    textinfo: 'none',
+                    hoverinfo: 'none',
+                    showlegend: false
+                }];
+                const layout = { width: 200, height: 200, margin: { t: 0, b: 0, l: 0, r: 0 }, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', annotations: [{ text: `<b>${score}</b><br><span style="font-size:14px">/ 10</span>`, x: 0.5, y: 0.5, font: { size: 24, color: '#3b82f6', family: 'JetBrains Mono' }, showarrow: false }] };
+                const config = { displayModeBar: false, responsive: true };
+                Plotly.newPlot('credibility-chart', data, layout, config);
             }
         });
     </script>
