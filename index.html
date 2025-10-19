@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FactLens 明鉴AI - 事实·观点·偏见深度分析</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/3.0.3/plotly.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -115,41 +115,67 @@
             </p>
         </div>
 
-        <!-- URL Input Section -->
+        <!-- 输入区域 -->
         <div class="analysis-card rounded-2xl p-8 mb-8">
-            <div class="flex flex-col lg:flex-row gap-6 items-center">
-                <div class="flex-1 w-full">
-                    <label for="url-input" class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-link mr-2 text-blue-500"></i>输入要分析的网页URL
-                    </label>
-                    <div class="relative">
-                        <input 
-                            type="url" 
-                            id="url-input" 
-                            placeholder="https://example.com/article"
-                            class="url-input w-full px-4 py-3 pr-12 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none"
-                        >
-                        <button 
-                            id="clear-btn" 
-                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors hidden"
-                            title="清空输入框"
-                        >
-                            <i class="fas fa-times-circle"></i>
-                        </button>
-                    </div>
+            <!-- URL 输入 -->
+            <label for="url-input" class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-link mr-2 text-blue-500"></i>输入要分析的网页URL
+            </label>
+            <div class="relative">
+                <input 
+                    type="url" 
+                    id="url-input" 
+                    placeholder="https://example.com/article"
+                    class="url-input w-full px-4 py-3 pr-12 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none"
+                >
+                <button 
+                    id="clear-btn" 
+                    class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors hidden"
+                    title="清空输入框"
+                >
+                    <i class="fas fa-times-circle"></i>
+                </button>
+            </div>
+
+            <!-- 或 -->
+            <div class="relative flex items-center justify-center my-6">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-gray-300"></div>
                 </div>
-                <div class="lg:pt-6">
-                    <button 
-                        id="analyze-btn" 
-                        class="analyze-btn w-full lg:w-auto px-8 py-3 text-white font-semibold rounded-lg flex items-center justify-center space-x-2"
-                    >
-                        <i class="fas fa-search"></i>
-                        <span>开始分析</span>
-                    </button>
+                <div class="relative bg-white px-4">
+                    <span class="text-sm text-gray-500">或</span>
                 </div>
             </div>
-            
-            <!-- Progress Section -->
+
+            <!-- 文本粘贴 -->
+            <label for="text-input" class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-file-alt mr-2 text-green-500"></i>粘贴文本内容进行分析
+            </label>
+            <textarea 
+                id="text-input" 
+                rows="6" 
+                placeholder="在此粘贴您要分析的文本内容..."
+                class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-green-500 focus:outline-none resize-none"
+            ></textarea>
+            <div class="flex justify-between items-center mt-2">
+                <div class="text-xs text-gray-500">支持直接粘贴文本内容进行分析</div>
+                <button id="clear-text-btn" class="text-xs text-gray-400 hover:text-gray-600 hidden">
+                    <i class="fas fa-times mr-1"></i>清空文本
+                </button>
+            </div>
+
+            <!-- 开始分析按钮 -->
+            <div class="text-center mt-6">
+                <button 
+                    id="analyze-btn" 
+                    class="analyze-btn w-full lg:w-auto px-8 py-3 text-white font-semibold rounded-lg flex items-center justify-center space-x-2"
+                >
+                    <i class="fas fa-search"></i>
+                    <span>开始分析</span>
+                </button>
+            </div>
+
+            <!-- 进度条 -->
             <div id="progress-section" class="hidden mt-6 p-4 bg-blue-50 rounded-lg">
                 <div class="flex items-center space-x-3 mb-3">
                     <div class="loading-spinner w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
@@ -161,9 +187,9 @@
             </div>
         </div>
 
-        <!-- Analysis Results Section -->
+        <!-- 结果展示区 -->
         <div id="results-section" class="hidden">
-            <!-- Credibility Score -->
+            <!-- 可信度评分 -->
             <div class="analysis-card rounded-2xl p-8 mb-8">
                 <div class="flex flex-col lg:flex-row items-center justify-between">
                     <div class="lg:w-1/2 mb-6 lg:mb-0">
@@ -190,9 +216,8 @@
                 </div>
             </div>
 
-            <!-- Analysis Sections -->
+            <!-- 三色拆解 -->
             <div class="grid lg:grid-cols-3 gap-8 mb-8">
-                <!-- Facts Section -->
                 <div class="analysis-card rounded-2xl p-6 section-fact">
                     <div class="flex items-center mb-4">
                         <div class="w-3 h-3 bg-blue-600 rounded-full mr-3"></div>
@@ -205,7 +230,6 @@
                     </div>
                 </div>
 
-                <!-- Opinions Section -->
                 <div class="analysis-card rounded-2xl p-6 section-opinion">
                     <div class="flex items-center mb-4">
                         <div class="w-3 h-3 bg-green-600 rounded-full mr-3"></div>
@@ -218,7 +242,6 @@
                     </div>
                 </div>
 
-                <!-- Bias Indicators -->
                 <div class="analysis-card rounded-2xl p-6 section-bias">
                     <div class="flex items-center mb-4">
                         <div class="w-3 h-3 bg-red-600 rounded-full mr-3"></div>
@@ -247,7 +270,7 @@
                 </div>
             </div>
 
-            <!-- Summary and Recommendations -->
+            <!-- 建议 & 摘要 -->
             <div class="grid lg:grid-cols-3 gap-8">
                 <div class="analysis-card rounded-2xl p-6">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4">
@@ -278,7 +301,7 @@
             </div>
         </div>
 
-        <!-- Sample Analysis Button -->
+        <!-- 示例按钮 -->
         <div id="sample-section" class="text-center mt-12">
             <button id="sample-btn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-medium transition-colors">
                 <i class="fas fa-play mr-2"></i>查看示例分析
@@ -297,57 +320,78 @@
     </footer>
 
     <script>
-        // 前端不再保存任何密钥，只调同域 /api/analyze
+        // ====== 安全调用：前端无密钥 ======
         const $ = id => document.getElementById(id);
 
         document.addEventListener('DOMContentLoaded', () => {
             const analyzeBtn = $('analyze-btn');
             const sampleBtn = $('sample-btn');
             const urlInput = $('url-input');
+            const textInput = $('text-input');
             const progressSection = $('progress-section');
             const resultsSection = $('results-section');
             const clearBtn = $('clear-btn');
+            const clearTextBtn = $('clear-text-btn');
 
             function toggleBtn() {
                 const url = urlInput.value.trim();
-                const has = !!url;
+                const text = textInput.value.trim();
+                const has = !!(url || text);
                 analyzeBtn.disabled = !has;
                 analyzeBtn.classList.toggle('opacity-50', !has);
-                clearBtn.classList.toggle('hidden', !has);
+                clearBtn.classList.toggle('hidden', !url);
+                clearTextBtn.classList.toggle('hidden', !text);
             }
-            urlInput.addEventListener('input', toggleBtn);
+            urlInput.addEventListener('input', () => {
+                if (urlInput.value) textInput.value = '';
+                toggleBtn();
+            });
+            textInput.addEventListener('input', () => {
+                if (textInput.value) urlInput.value = '';
+                toggleBtn();
+            });
             clearBtn.addEventListener('click', () => {
                 urlInput.value = '';
                 toggleBtn();
                 urlInput.focus();
             });
+            clearTextBtn.addEventListener('click', () => {
+                textInput.value = '';
+                toggleBtn();
+                textInput.focus();
+            });
             urlInput.addEventListener('paste', e => setTimeout(toggleBtn, 0));
 
             analyzeBtn.addEventListener('click', startAnalysis);
             sampleBtn.addEventListener('click', () => {
-                alert('示例功能已移除，请输入URL进行真实分析。');
+                alert('示例功能已移除，请输入URL或粘贴文本进行真实分析。');
                 urlInput.focus();
             });
 
             async function startAnalysis() {
                 const url = urlInput.value.trim();
-                if (!url) return;
+                const text = textInput.value.trim();
+                if (!url && !text) return;
 
                 progressSection.classList.remove('hidden');
                 resultsSection.classList.add('hidden');
 
                 try {
-                    // ① 获取纯净 Markdown（边缘函数已部署）
-                    $('progress-text').textContent = '正在获取网页内容...';
+                    $('progress-text').textContent = '正在获取内容...';
                     $('progress-bar').style.width = '20%';
 
-                    const jinaResp = await fetch(`https://r.jina.ai/${encodeURIComponent(url)}`);
-                    if (!jinaResp.ok) throw new Error('无法获取网页内容');
-                    let content = await jinaResp.text();
-                    if (content.length > 4500) content = content.slice(0, 4500) + '……';
-                    const title = url;
+                    let content = '', title = '';
+                    if (url) {
+                        const jinaResp = await fetch(`https://r.jina.ai/${encodeURIComponent(url)}`);
+                        if (!jinaResp.ok) throw new Error('无法获取网页内容');
+                        content = await jinaResp.text();
+                        if (content.length > 4500) content = content.slice(0, 4500) + '……';
+                        title = url;
+                    } else if (text) {
+                        content = text.slice(0, 4500);
+                        title = '直接粘贴的文本内容';
+                    }
 
-                    // ② AI 分析（同域边缘函数，无密钥）
                     $('progress-text').textContent = 'AI深度分析中...';
                     $('progress-bar').style.width = '60%';
 
@@ -359,7 +403,6 @@
                     if (!analyzeRes.ok) throw new Error('分析服务异常');
                     const { markdown } = await analyzeRes.json();
 
-                    // ③ 解析并展示
                     $('progress-text').textContent = '生成可信度报告...';
                     $('progress-bar').style.width = '100%';
                     displayResults(parseKimiResponse(markdown));
@@ -428,7 +471,6 @@
                 document.getElementById('publisher-recommendation').textContent = data.publisherRecommendation || '建议提升内容质量';
                 document.getElementById('pr-recommendation').textContent = data.recommendation || '建议谨慎处理';
 
-                // 可信度环形图
                 createCredibilityChart(data.credibility || 8.5);
             }
 
