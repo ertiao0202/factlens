@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FactLens 明鉴AI - 四维分析</title>
 
-  <!-- === 国内可访问、带版本号的 CDN === -->
+  <!-- 国内可访问、带版本号的 CDN -->
   <script src="https://cdn.tailwindcss.com/3.4.0"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
@@ -119,6 +119,7 @@
     /* ===== 通用工具 ===== */
     const $ = id => document.getElementById(id);
 
+    /* ===== 增强抓取：自动重试 + 软拦截检测 ===== */
     async function fetchText(url, maxTry = 2) {
       const mirrors = [
         u => `https://r.jina.ai/${encodeURIComponent(u)}?chunk_num=1&chunk_order=0&html=false`,
@@ -127,17 +128,28 @@
       for (let i = 0; i < mirrors.length; i++) {
         try {
           const res = await fetch(mirrors[i](url), { signal: AbortSignal.timeout(8000) });
-          if (res.ok) return await res.text();
+          if (!res.ok) continue;
+          const text = await res.text();
+          // 新增：软拦截关键词
+          if (/(请完成验证|Sina Visitor System|百度安全验证|需验证|请开启 JavaScript|访客验证|无法访问|403 Forbidden|404 Not Found|Access Denied|Please enable cookies|完成验证后方可继续访问)/i.test(text)) {
+            console.warn('[FactLens] 遇到验证页，尝试下一镜像');
+            continue; // 直接换镜像重试
+          }
+          return text;
         } catch (e) {
           if (i === mirrors.length - 1) throw e;
         }
       }
-      return '';
+      throw new Error('NO_VALID_BODY');
     }
+
+    /* ===== 增强校验：长度+关键词 ===== */
     function isValidBody(text) {
-      if (!text || text.length < 20) return false;
-      return !/完成验证后方可继续访问|百度安全验证|Sina Visitor System|请开启 JavaScript|访客验证|无法访问|403 Forbidden|404 Not Found|Access Denied|Please enable cookies/i.test(text);
+      if (!text || text.length < 60) return false; // 长度提高到 60
+      const invalid = /(请完成验证|百度安全验证|Sina Visitor System|请开启 JavaScript|访客验证|无法访问|403 Forbidden|404 Not Found|Access Denied|Please enable cookies|完成验证后方可继续访问)/i;
+      return !invalid.test(text);
     }
+
     function buildPrompt(content, title) {
       return `【角色】
 你是明鉴AI——一个专门做「事实-观点-偏见」三色拆解的内容鉴定器。
