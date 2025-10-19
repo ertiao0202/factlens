@@ -3,17 +3,14 @@ export const config = { runtime: 'edge' };
 
 export default async function handler(req) {
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method Not Allowed' }),
-      { status: 405, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ error: 'Method Not Allowed' }), { status: 405, headers: { 'Content-Type': 'application/json' } });
   }
-
   const { content, title } = await req.json();
   if (!content || !title) {
-    return new Response(JSON.stringify({ error: '缺少 content 或 title' }),
-      { status: 400, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ error: '缺少 content 或 title' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
   }
 
-  const prompt = `【角色】你是明鉴AI，专做“事实-观点-偏见”三色拆解，风格犀利、简洁、中性。
+  const prompt = `【角色】你是明鉴AI，专做"事实-观点-偏见"三色拆解，风格犀利、简洁、中性。
 【输入】Markdown正文如下：
 ${content}
 【输出格式】
@@ -22,11 +19,11 @@ ${content}
 | 标题：${title} |
 | 可信度：X / 10（一句话理由） |
 
-#### 事实区（≤5 条，每条≤25 字）
+#### 事实区（≤5 条，每条≤25 字，必须可证伪）
 1. xxx
 ...
 
-#### 观点区（≤5 条，每条≤25 字）
+#### 观点区（≤5 条，每条≤25 字，必须不可证伪）
 1. xxx
 ...
 
@@ -39,17 +36,17 @@ ${content}
 #### 一句话摘要（≤40 字）
 xxx
 
-#### 对内容发布者的建议（≤60 字）
-必须给出具体建议，不能写“暂无”或“无”。
+#### 对内容发布者的建议（≤60 字，必须可执行，禁止写"无"）
+必须给出具体建议，不能写"暂无"或"无"。
 
-#### 公关回应建议（≤60 字）
-必须给出具体建议，不能写“暂无”或“无”。`;
+#### 公关回应建议（≤60 字，必须可执行，禁止写"无"）
+必须给出具体建议，不能写"暂无"或"无"。`;
 
   try {
-    const moonResp = await fetch('https://api.moonshot.cn/v1/chat/completions', {
+    const res = await fetch('https://api.moonshot.cn/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.KIMI_KEY}`,
+        'Authorization': `Bearer ${process.env.KIMI_KEY}`, // 仅服务器可见
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -59,17 +56,11 @@ xxx
         max_tokens: 2048
       })
     });
-    if (!moonResp.ok) throw new Error('Moonshot API 异常');
-    const json = await moonResp.json();
+    if (!res.ok) throw new Error('Moonshot API 异常');
+    const json = await res.json();
     const markdown = json.choices[0].message.content;
-    return new Response(JSON.stringify({ markdown }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return new Response(JSON.stringify({ markdown }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 }
