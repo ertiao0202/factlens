@@ -218,7 +218,7 @@
 
     <!-- 页面最底部：分享海报按钮 -->
     <div id="bottom-share" class="hidden mt-12 text-center">
-      <button id="share-poster-btn" class="share-poster-btn"><i class="fas fa-image mr-2"></i>下载分享海报</button>
+      <button id="share-poster-bottom" class="share-poster-btn"><i class="fas fa-image mr-2"></i>下载分享海报</button>
     </div>
   </main>
 
@@ -467,7 +467,8 @@ ${content}`;
 
     /* ===== DOM 绑定 ===== */
     document.addEventListener('DOMContentLoaded', () => {
-      const analyzeBtn = $('analyze-btn'), sampleBtn = $('sample-btn'), urlInput = $('url-input'), textInput = $('text-input'), progressSection = $('progress-section'), resultsSection = $('results-section'), fourDimCard = $('four-dim-card'), clearBtn = $('clear-btn'), clearTextBtn = $('clear-text-btn'), sharePosterBtn = $('share-poster-btn'), bottomShare = $('bottom-share');
+      const analyzeBtn = $('analyze-btn'), sampleBtn = $('sample-btn'), urlInput = $('url-input'), textInput = $('text-input'), progressSection = $('progress-section'), resultsSection = $('results-section'), fourDimCard = $('four-dim-card'), clearBtn = $('clear-btn'), clearTextBtn = $('clear-text-btn'), bottomShare = $('bottom-share');
+
       function toggleBtn() {
         const u = urlInput.value.trim(), t = textInput.value.trim(), has = !!(u || t);
         analyzeBtn.disabled = !has;
@@ -482,7 +483,6 @@ ${content}`;
       urlInput.addEventListener('paste', e => setTimeout(() => urlInput.dispatchEvent(new Event('input')), 0));
       analyzeBtn.addEventListener('click', startAnalysis);
       sampleBtn.addEventListener('click', () => { alert('示例功能已移除，请输入URL或粘贴文本进行真实分析。'); urlInput.focus(); });
-      sharePosterBtn.addEventListener('click', generatePoster);
 
       async function startAnalysis() {
         console.log('[FactLens] 按钮已点击');
