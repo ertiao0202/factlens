@@ -1,3 +1,9 @@
+// 放在 main.js 最前面
+import { setLocale } from '/i18n/i18n.js';
+document.addEventListener('DOMContentLoaded', () => {
+  const sel = document.getElementById('lang-switch');
+  if (sel) sel.addEventListener('change', e => setLocale(e.target.value));
+});
 /* global t, setLocale, renderLang */
 document.addEventListener('DOMContentLoaded', () => {
   const analyzeBtn = document.getElementById('analyze-btn');
