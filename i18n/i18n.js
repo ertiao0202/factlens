@@ -1,4 +1,4 @@
-// default to English
+// i18n.js  (ESM 浏览器版)
 let LANG = localStorage.getItem('factlens-lang') || 'en';
 const cache = {};
 
@@ -22,10 +22,18 @@ export async function setLocale(l) {
   renderLang();
 }
 export function renderLang() {
+  // 常规文案
   document.querySelectorAll('[data-i18n]').forEach(el => el.textContent = t(el.dataset.i18n));
   document.querySelectorAll('[data-i18n-placeholder]').forEach(el => el.placeholder = t(el.dataset.i18nPlaceholder));
+
+  // 强制刷新维度标签 & 按钮文字
+  ['eb-score','ts-score','fd-score','cs-score','emotional-words','binary-opposition','motivation-guessing','overall-tendency','publisher-recommendation','pr-recommendation']
+    .forEach(id => {
+      const el = document.getElementById(id);
+      if (el && el.dataset.i18n) el.textContent = t(el.dataset.i18n);
+    });
 }
-// auto boot
+// 自动初始化
 (async () => {
   await loadLocale('en');
   renderLang();
