@@ -16,6 +16,7 @@
   "progress.ai": "Analyzing…",
   "progress.done": "Finalizing report…",
   "report.conclusion": "Report conclusion",
+  "report.credibility": "Credibility",
   "fourDim.title": "Four-Dimension Score",
   "dim.emotion": "Emotional Balance",
   "dim.transparency": "Source Transparency",
@@ -33,5 +34,6 @@
   "footer.privacy": "Privacy",
   "footer.terms": "Terms",
   "footer.powered": "Powered by AI",
-  "modal.close": "Close"
+  "modal.close": "Close",
+  "prompt.template": "Role: You are FactLens, a \"fact-opinion-bias\" analyzer. Output strictly follows the format below.\nTitle: {{title}}\nContent: {{content}}\n\nFormat:\n| FactLens Report |\n|----|\nCredibility: X/10 (one-sentence reason)\n\n#### Facts (max 8, falsifiable)\n1. <fact>...</fact>\n\n#### Opinions (max 8, not falsifiable)\n1. <opinion>...</opinion>\n\n#### Bias\n- Emotional words: X eg <eg>sentence</eg>\n- Binary opposition: X eg <eg>sentence</eg>\n- Mind-reading: X eg <eg>sentence</eg>\n- Overall slant: neutral/positive/negative X%\n\n#### For Publishers (≤100 words, actionable)\nxxx\n\n#### PR Response Playbook (≤100 words)\nxxx\n\n#### Conclusion (≤80 words)\nxxx"
 }
